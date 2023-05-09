@@ -760,6 +760,7 @@ if (__DEV__) {
 export interface ScrollRestorationProps {
   getKey?: GetScrollRestorationKeyFunction;
   storageKey?: string;
+  elementRef?: React.RefObject<HTMLElement>;
 }
 
 /**
@@ -769,8 +770,9 @@ export interface ScrollRestorationProps {
 export function ScrollRestoration({
   getKey,
   storageKey,
+  elementRef,
 }: ScrollRestorationProps) {
-  useScrollRestoration({ getKey, storageKey });
+  useScrollRestoration({ getKey, storageKey, elementRef });
   return null;
 }
 
@@ -1168,15 +1170,34 @@ export function useFetchers(): Fetcher[] {
 const SCROLL_RESTORATION_STORAGE_KEY = "react-router-scroll-positions";
 let savedScrollPositions: Record<string, number> = {};
 
+
+const getScrollTarget = (elementRef: React.RefObject<HTMLElement> | undefined) =>
+  elementRef ? elementRef.current : window;
+
+const getScrollY = (elementRef: React.RefObject<HTMLElement> | undefined) => {
+  const el = getScrollTarget(elementRef);
+  // window has scrollY but normal elements have scrollTop
+  return !el ? 0 : (el as Window).scrollY || (el as HTMLElement).scrollTop;
+}
+
+const scrollY = (elementRef: React.RefObject<HTMLElement> | undefined, y: number) => {
+  const el = getScrollTarget(elementRef);
+  if (el) {
+    el.scrollTo(0, y);
+  }
+}
+
 /**
  * When rendered inside a RouterProvider, will restore scroll positions on navigations
  */
 function useScrollRestoration({
   getKey,
   storageKey,
+  elementRef,
 }: {
   getKey?: GetScrollRestorationKeyFunction;
   storageKey?: string;
+  elementRef?: React.RefObject<HTMLElement>;
 } = {}) {
   let { router } = useDataRouterContext(DataRouterHook.UseScrollRestoration);
   let { restoreScrollPosition, preventScrollReset } = useDataRouterState(
@@ -1199,14 +1220,14 @@ function useScrollRestoration({
     React.useCallback(() => {
       if (navigation.state === "idle") {
         let key = (getKey ? getKey(location, matches) : null) || location.key;
-        savedScrollPositions[key] = window.scrollY;
+        savedScrollPositions[key] = getScrollY(elementRef);
       }
       sessionStorage.setItem(
         storageKey || SCROLL_RESTORATION_STORAGE_KEY,
         JSON.stringify(savedScrollPositions)
       );
       window.history.scrollRestoration = "auto";
-    }, [storageKey, getKey, navigation.state, location, matches])
+    }, [storageKey, getKey, elementRef, navigation.state, location, matches])
   );
 
   // Read in any saved scroll locations
@@ -1230,11 +1251,11 @@ function useScrollRestoration({
     React.useLayoutEffect(() => {
       let disableScrollRestoration = router?.enableScrollRestoration(
         savedScrollPositions,
-        () => window.scrollY,
+        () => getScrollY(elementRef),
         getKey
       );
       return () => disableScrollRestoration && disableScrollRestoration();
-    }, [router, getKey]);
+    }, [router, getKey, elementRef]);
 
     // Restore scrolling when state.restoreScrollPosition changes
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -1246,7 +1267,7 @@ function useScrollRestoration({
 
       // been here before, scroll to it
       if (typeof restoreScrollPosition === "number") {
-        window.scrollTo(0, restoreScrollPosition);
+        scrollY(elementRef, restoreScrollPosition);
         return;
       }
 
@@ -1265,8 +1286,8 @@ function useScrollRestoration({
       }
 
       // otherwise go to the top on new locations
-      window.scrollTo(0, 0);
-    }, [location, restoreScrollPosition, preventScrollReset]);
+      scrollY(elementRef, 0);
+    }, [location, restoreScrollPosition, preventScrollReset, elementRef]);
   }
 }
 
