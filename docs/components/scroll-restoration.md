@@ -122,7 +122,7 @@ let ref = React.useRef(null);
 <div ref={ref}>
   {/* scrollable contents */}
 </div>
-<ScrollRestoration scrollContainer={ref}} />
+<ScrollRestoration scrollContainer={ref} />
 ```
 
 ## `storageKey`
