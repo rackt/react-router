@@ -4,7 +4,9 @@
  */
 import * as React from "react";
 import type {
+  Location,
   NavigateOptions,
+  NavigationType,
   RelativeRoutingType,
   RouteObject,
   To,
@@ -312,12 +314,20 @@ export function BrowserRouter({
   }
 
   let history = historyRef.current;
-  let [state, setState] = React.useState({
+  let [state, setStateImpl] = React.useState({
     action: history.action,
     location: history.location,
   });
+  let setState = React.useCallback(
+    (newState: { action: NavigationType; location: Location }) => {
+      "startTransition" in React
+        ? React.startTransition(() => setStateImpl(newState))
+        : setStateImpl(newState);
+    },
+    [setStateImpl]
+  );
 
-  React.useLayoutEffect(() => history.listen(setState), [history]);
+  React.useLayoutEffect(() => history.listen(setState), [history, setState]);
 
   return (
     <Router
@@ -347,12 +357,20 @@ export function HashRouter({ basename, children, window }: HashRouterProps) {
   }
 
   let history = historyRef.current;
-  let [state, setState] = React.useState({
+  let [state, setStateImpl] = React.useState({
     action: history.action,
     location: history.location,
   });
+  let setState = React.useCallback(
+    (newState: { action: NavigationType; location: Location }) => {
+      "startTransition" in React
+        ? React.startTransition(() => setStateImpl(newState))
+        : setStateImpl(newState);
+    },
+    [setStateImpl]
+  );
 
-  React.useLayoutEffect(() => history.listen(setState), [history]);
+  React.useLayoutEffect(() => history.listen(setState), [history, setState]);
 
   return (
     <Router
@@ -378,12 +396,20 @@ export interface HistoryRouterProps {
  * version of the history library that React Router uses internally.
  */
 function HistoryRouter({ basename, children, history }: HistoryRouterProps) {
-  const [state, setState] = React.useState({
+  let [state, setStateImpl] = React.useState({
     action: history.action,
     location: history.location,
   });
+  let setState = React.useCallback(
+    (newState: { action: NavigationType; location: Location }) => {
+      "startTransition" in React
+        ? React.startTransition(() => setStateImpl(newState))
+        : setStateImpl(newState);
+    },
+    [setStateImpl]
+  );
 
-  React.useLayoutEffect(() => history.listen(setState), [history]);
+  React.useLayoutEffect(() => history.listen(setState), [history, setState]);
 
   return (
     <Router
@@ -918,7 +944,7 @@ export function useSearchParams(
   return [searchParams, setSearchParams];
 }
 
-type SetURLSearchParams = (
+export type SetURLSearchParams = (
   nextInit?:
     | URLSearchParamsInit
     | ((prev: URLSearchParams) => URLSearchParamsInit),

@@ -639,9 +639,6 @@ describe("<Navigate>", () => {
           {
             index: true,
             Component() {
-              // When state managed by react and changes during render, we'll
-              // only "see" the value from the first pass through here in our
-              // effects
               let [count, setCount] = React.useState(0);
               React.useEffect(() => {
                 if (count === 0) {
@@ -684,11 +681,11 @@ describe("<Navigate>", () => {
           Page B
         </h1>
         <p>
-          0
+          1
         </p>
       </div>"
     `);
-    expect(navigateSpy).toHaveBeenCalledTimes(2);
+    expect(navigateSpy).toHaveBeenCalledTimes(3);
     expect(navigateSpy.mock.calls[0]).toMatchObject([
       { pathname: "/b" },
       { state: { count: 0 } },
@@ -697,7 +694,7 @@ describe("<Navigate>", () => {
       { pathname: "/b" },
       { state: { count: 0 } },
     ]);
-    expect(renders).toEqual([0, 0]);
+    expect(renders).toEqual([1, 1]);
   });
 
   it("handles setState in render in StrictMode using a data router (async loader)", async () => {

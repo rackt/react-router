@@ -188,6 +188,7 @@ function useNavigateUnstable(): NavigateFunction {
     `useNavigate() may be used only in the context of a <Router> component.`
   );
 
+  let dataRouterContext = React.useContext(DataRouterContext);
   let { basename, navigator } = React.useContext(NavigationContext);
   let { matches } = React.useContext(RouteContext);
   let { pathname: locationPathname } = useLocation();
@@ -222,10 +223,12 @@ function useNavigateUnstable(): NavigateFunction {
       );
 
       // If we're operating within a basename, prepend it to the pathname prior
-      // to handing off to history.  If this is a root navigation, then we
-      // navigate to the raw basename which allows the basename to have full
-      // control over the presence of a trailing slash on root links
-      if (basename !== "/") {
+      // to handing off to history (but only if we're not in a data router,
+      // otherwise it'll prepend the basename inside of the router).
+      // If this is a root navigation, then we navigate to the raw basename
+      // which allows the basename to have full control over the presence of a
+      // trailing slash on root links
+      if (dataRouterContext == null && basename !== "/") {
         path.pathname =
           path.pathname === "/"
             ? basename
@@ -238,7 +241,13 @@ function useNavigateUnstable(): NavigateFunction {
         options
       );
     },
-    [basename, navigator, routePathnamesJson, locationPathname]
+    [
+      basename,
+      navigator,
+      routePathnamesJson,
+      locationPathname,
+      dataRouterContext,
+    ]
   );
 
   return navigate;

@@ -10,6 +10,7 @@ import InitialLocationDefaultKey from "./TestSequences/InitialLocationDefaultKey
 import PushNewLocation from "./TestSequences/PushNewLocation";
 import PushSamePath from "./TestSequences/PushSamePath";
 import PushState from "./TestSequences/PushState";
+import PushStateInvalid from "./TestSequences/PushStateInvalid";
 import PushMissingPathname from "./TestSequences/PushMissingPathname";
 import PushRelativePathnameWarning from "./TestSequences/PushRelativePathnameWarning";
 import ReplaceNewLocation from "./TestSequences/ReplaceNewLocation";
@@ -26,10 +27,11 @@ import ListenPopOnly from "./TestSequences/ListenPopOnly";
 
 describe("a hash history", () => {
   let history: HashHistory;
+  let dom: JSDOM;
 
   beforeEach(() => {
     // Need to use our own custom DOM in order to get a working history
-    const dom = new JSDOM(`<!DOCTYPE html><p>History Example</p>`, {
+    dom = new JSDOM(`<!DOCTYPE html><p>History Example</p>`, {
       url: "https://example.org/",
     });
     dom.window.history.replaceState(null, "", "#/");
@@ -94,6 +96,10 @@ describe("a hash history", () => {
   describe("push state", () => {
     it("calls change listeners with the new location", () => {
       PushState(history);
+    });
+
+    it("re-throws when using non-serializable state", () => {
+      PushStateInvalid(history, dom.window);
     });
   });
 

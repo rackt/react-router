@@ -24,5 +24,4 @@ module.exports = {
     "^react-router$": "<rootDir>/../react-router/index.ts",
     "^react-router-native$": "<rootDir>/index.tsx",
   },
-  reporters: ["default"],
 };

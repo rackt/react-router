@@ -32,11 +32,15 @@
   "jest": {
     "projects": [
       "<rootDir>/packages/*"
+    ],
+    "reporters": [
+      "default"
     ]
   },
   "resolutions": {
     "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0"
+    "@types/react-dom": "^18.0.0",
+    "jsdom": "22.0.0"
   },
   "dependencies": {
     "@ampproject/filesize": "^4.3.0",
@@ -108,16 +112,16 @@
       "none": "45 kB"
     },
     "packages/react-router/dist/react-router.production.min.js": {
-      "none": "13.3 kB"
+      "none": "13.4 kB"
     },
     "packages/react-router/dist/umd/react-router.production.min.js": {
-      "none": "15.6 kB"
+      "none": "15.8 kB"
     },
     "packages/react-router-dom/dist/react-router-dom.production.min.js": {
-      "none": "12 kB"
+      "none": "12.3 kB"
     },
     "packages/react-router-dom/dist/umd/react-router-dom.production.min.js": {
-      "none": "17.9 kB"
+      "none": "18.2 kB"
     }
   }
 }

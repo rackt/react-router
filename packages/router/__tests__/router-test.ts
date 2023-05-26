@@ -428,6 +428,18 @@ function setup({
     });
   }
 
+  // jsdom is making more and more properties non-configurable, so we inject
+  // our own jest-friendly window.
+  let testWindow = {
+    ...window,
+    location: {
+      ...window.location,
+      assign: jest.fn(),
+      replace: jest.fn(),
+    },
+  } as unknown as Window;
+  // ^ Spread makes TS sad - `window.NaN` conflicts with `[index: number]: Window`
+
   let history = createMemoryHistory({ initialEntries, initialIndex });
   jest.spyOn(history, "push");
   jest.spyOn(history, "replace");
@@ -437,6 +449,7 @@ function setup({
     routes: enhanceRoutes(routes),
     hydrationData,
     future,
+    window: testWindow,
   }).initialize();
 
   function getRouteHelpers(
@@ -843,6 +856,7 @@ function setup({
   }
 
   return {
+    window: testWindow,
     history,
     router: currentRouter,
     navigate,
@@ -1476,8 +1490,16 @@ describe("a router", () => {
       });
     });
 
-    it("does not run loaders on hash change only navigations", async () => {
+    it("does not run loaders on hash change only navigations (no hash -> hash)", async () => {
       let t = initializeTmTest();
+      expect(t.router.state.loaderData).toMatchObject({ root: "ROOT" });
+      let A = await t.navigate("/#bar");
+      expect(A.loaders.root.stub.mock.calls.length).toBe(0);
+      expect(t.router.state.loaderData).toMatchObject({ root: "ROOT" });
+    });
+
+    it("does not run loaders on hash change only navigations (hash -> new hash)", async () => {
+      let t = initializeTmTest({ url: "/#foo" });
       expect(t.router.state.loaderData).toMatchObject({ root: "ROOT" });
       let A = await t.navigate("/#bar");
       expect(A.loaders.root.stub.mock.calls.length).toBe(0);
@@ -5245,6 +5267,47 @@ describe("a router", () => {
       router.dispose();
     });
 
+    it("kicks off initial data load when hash is present", async () => {
+      let loaderDfd = createDeferred();
+      let loaderSpy = jest.fn(() => loaderDfd.promise);
+      let router = createRouter({
+        history: createMemoryHistory({ initialEntries: ["/#hash"] }),
+        routes: [
+          {
+            path: "/",
+            loader: loaderSpy,
+          },
+        ],
+      });
+      router.initialize();
+
+      expect(console.warn).not.toHaveBeenCalled();
+      expect(loaderSpy.mock.calls.length).toBe(1);
+      expect(router.state).toMatchObject({
+        historyAction: "POP",
+        location: expect.objectContaining({ pathname: "/", hash: "#hash" }),
+        initialized: false,
+        navigation: {
+          state: "loading",
+          location: { pathname: "/", hash: "#hash" },
+        },
+      });
+      expect(router.state.loaderData).toEqual({});
+
+      await loaderDfd.resolve("DATA");
+      expect(router.state).toMatchObject({
+        historyAction: "POP",
+        location: expect.objectContaining({ pathname: "/", hash: "#hash" }),
+        initialized: true,
+        navigation: IDLE_NAVIGATION,
+        loaderData: {
+          "0": "DATA",
+        },
+      });
+
+      router.dispose();
+    });
+
     it("executes loaders on push navigations", async () => {
       let t = setup({
         routes: TASK_ROUTES,
@@ -6496,15 +6559,6 @@ describe("a router", () => {
       ];
 
       for (let url of urls) {
-        // This is gross, don't blame me, blame SO :)
-        // https://stackoverflow.com/a/60697570
-        let oldLocation = window.location;
-        const location = new URL(window.location.href) as unknown as Location;
-        location.assign = jest.fn();
-        location.replace = jest.fn();
-        delete (window as any).location;
-        window.location = location as unknown as Location;
-
         let t = setup({ routes: REDIRECT_ROUTES });
 
         let A = await t.navigate("/parent/child", {
@@ -6513,10 +6567,8 @@ describe("a router", () => {
         });
 
         await A.actions.child.redirectReturn(url);
-        expect(window.location.assign).toHaveBeenCalledWith(url);
-        expect(window.location.replace).not.toHaveBeenCalled();
-
-        window.location = oldLocation;
+        expect(t.window.location.assign).toHaveBeenCalledWith(url);
+        expect(t.window.location.replace).not.toHaveBeenCalled();
       }
     });
 
@@ -6529,15 +6581,6 @@ describe("a router", () => {
       ];
 
       for (let url of urls) {
-        // This is gross, don't blame me, blame SO :)
-        // https://stackoverflow.com/a/60697570
-        let oldLocation = window.location;
-        const location = new URL(window.location.href) as unknown as Location;
-        location.assign = jest.fn();
-        location.replace = jest.fn();
-        delete (window as any).location;
-        window.location = location as unknown as Location;
-
         let t = setup({ routes: REDIRECT_ROUTES });
 
         let A = await t.navigate("/parent/child", {
@@ -6547,10 +6590,8 @@ describe("a router", () => {
         });
 
         await A.actions.child.redirectReturn(url);
-        expect(window.location.replace).toHaveBeenCalledWith(url);
-        expect(window.location.assign).not.toHaveBeenCalled();
-
-        window.location = oldLocation;
+        expect(t.window.location.replace).toHaveBeenCalledWith(url);
+        expect(t.window.location.assign).not.toHaveBeenCalled();
       }
     });
 
@@ -6605,15 +6646,6 @@ describe("a router", () => {
     });
 
     it("treats same-origin absolute URLs as external if they don't match the basename", async () => {
-      // This is gross, don't blame me, blame SO :)
-      // https://stackoverflow.com/a/60697570
-      let oldLocation = window.location;
-      const location = new URL(window.location.href) as unknown as Location;
-      location.assign = jest.fn();
-      location.replace = jest.fn();
-      delete (window as any).location;
-      window.location = location as unknown as Location;
-
       let t = setup({ routes: REDIRECT_ROUTES, basename: "/base" });
 
       let A = await t.navigate("/base/parent/child", {
@@ -6623,10 +6655,8 @@ describe("a router", () => {
 
       let url = "http://localhost/not/the/same/basename";
       await A.actions.child.redirectReturn(url);
-      expect(window.location.assign).toHaveBeenCalledWith(url);
-      expect(window.location.replace).not.toHaveBeenCalled();
-
-      window.location = oldLocation;
+      expect(t.window.location.assign).toHaveBeenCalledWith(url);
+      expect(t.window.location.replace).not.toHaveBeenCalled();
     });
 
     describe("redirect status code handling", () => {
@@ -7404,6 +7434,49 @@ describe("a router", () => {
       expect(t.router.state.location.key).toBe(key);
       // @ts-ignore
       expect(t.history.push.mock.calls.length).toBe(1);
+      expect(t.history.replace).not.toHaveBeenCalled();
+    });
+
+    it("handles revalidation when a hash is present", async () => {
+      let t = setup({
+        routes: TASK_ROUTES,
+        initialEntries: ["/#hash"],
+        hydrationData: {
+          loaderData: {
+            root: "ROOT_DATA",
+            index: "INDEX_DATA",
+          },
+        },
+      });
+
+      let key = t.router.state.location.key;
+      let R = await t.revalidate();
+      expect(t.router.state).toMatchObject({
+        historyAction: "POP",
+        location: { pathname: "/" },
+        navigation: IDLE_NAVIGATION,
+        revalidation: "loading",
+        loaderData: {
+          root: "ROOT_DATA",
+          index: "INDEX_DATA",
+        },
+      });
+
+      await R.loaders.root.resolve("ROOT_DATA*");
+      await R.loaders.index.resolve("INDEX_DATA*");
+      expect(t.router.state).toMatchObject({
+        historyAction: "POP",
+        location: { pathname: "/" },
+        navigation: IDLE_NAVIGATION,
+        revalidation: "idle",
+        loaderData: {
+          root: "ROOT_DATA*",
+          index: "INDEX_DATA*",
+        },
+      });
+      expect(t.router.state.location.hash).toBe("#hash");
+      expect(t.router.state.location.key).toBe(key);
+      expect(t.history.push).not.toHaveBeenCalled();
       expect(t.history.replace).not.toHaveBeenCalled();
     });
 
@@ -15351,7 +15424,7 @@ describe("a router", () => {
 
       // Routes should be updated
       expect(t.router.routes).not.toBe(ogRoutes);
-      expect(t.router.routes).toBe(newRoutes);
+      expect(t.router.routes).toEqual(newRoutes);
 
       // Loader data should be updated and foo removed
       expect(t.router.state.loaderData).toEqual({
@@ -15401,7 +15474,7 @@ describe("a router", () => {
 
       // Routes should be updated
       expect(t.router.routes).not.toBe(ogRoutes);
-      expect(t.router.routes).toBe(newRoutes);
+      expect(t.router.routes).toEqual(newRoutes);
 
       // Loader data should be updated
       expect(t.router.state.loaderData).toEqual({
@@ -15467,7 +15540,7 @@ describe("a router", () => {
 
       // Routes should be updated
       expect(t.router.routes).not.toBe(ogRoutes);
-      expect(t.router.routes).toBe(newRoutes);
+      expect(t.router.routes).toEqual(newRoutes);
 
       // Loader data should be updated
       expect(t.router.state.loaderData).toEqual({
@@ -15527,7 +15600,7 @@ describe("a router", () => {
 
       // Routes should be updated
       expect(t.router.routes).not.toBe(ogRoutes);
-      expect(t.router.routes).toBe(newRoutes);
+      expect(t.router.routes).toEqual(newRoutes);
 
       // Loader data should be updated
       expect(t.router.state.loaderData).toEqual({
@@ -15582,8 +15655,8 @@ describe("a router", () => {
         {
           path: "/",
           id: "root",
-          hasErrorBoundary: true,
           loader: () => rootDfd2.promise,
+          hasErrorBoundary: true,
           children: [
             {
               index: true,
@@ -15616,7 +15689,7 @@ describe("a router", () => {
 
       // Routes should be updated
       expect(currentRouter.routes).not.toEqual(ogRoutes);
-      expect(currentRouter.routes).toBe(newRoutes);
+      expect(currentRouter.routes).toEqual(newRoutes);
 
       // Loader data should be updated
       expect(currentRouter.state.loaderData).toEqual({
@@ -15684,12 +15757,13 @@ describe("a router", () => {
         {
           path: "/",
           id: "root",
-          hasErrorBoundary: true,
           loader: () => rootDfd2.promise,
+          hasErrorBoundary: true,
           children: [
             {
               index: true,
               id: "index",
+              hasErrorBoundary: false,
             },
           ],
         },
@@ -15711,7 +15785,7 @@ describe("a router", () => {
 
       // Routes should be updated
       expect(currentRouter.routes).not.toEqual(ogRoutes);
-      expect(currentRouter.routes).toBe(newRoutes);
+      expect(currentRouter.routes).toEqual(newRoutes);
 
       // Loader data should be updated
       expect(currentRouter.state.loaderData).toEqual({

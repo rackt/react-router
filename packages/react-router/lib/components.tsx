@@ -63,7 +63,15 @@ export function RouterProvider({
 }: RouterProviderProps): React.ReactElement {
   // Need to use a layout effect here so we are subscribed early enough to
   // pick up on any render-driven redirects/navigations (useEffect/<Navigate>)
-  let [state, setState] = React.useState(router.state);
+  let [state, setStateImpl] = React.useState(router.state);
+  let setState = React.useCallback(
+    (newState: RouterState) => {
+      "startTransition" in React
+        ? React.startTransition(() => setStateImpl(newState))
+        : setStateImpl(newState);
+    },
+    [setStateImpl]
+  );
   React.useLayoutEffect(() => router.subscribe(setState), [router, setState]);
 
   let navigator = React.useMemo((): Navigator => {
@@ -164,12 +172,20 @@ export function MemoryRouter({
   }
 
   let history = historyRef.current;
-  let [state, setState] = React.useState({
+  let [state, setStateImpl] = React.useState({
     action: history.action,
     location: history.location,
   });
+  let setState = React.useCallback(
+    (newState: { action: NavigationType; location: Location }) => {
+      "startTransition" in React
+        ? React.startTransition(() => setStateImpl(newState))
+        : setStateImpl(newState);
+    },
+    [setStateImpl]
+  );
 
-  React.useLayoutEffect(() => history.listen(setState), [history]);
+  React.useLayoutEffect(() => history.listen(setState), [history, setState]);
 
   return (
     <Router

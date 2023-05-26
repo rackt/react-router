@@ -323,7 +323,7 @@ export function useSearchParams(
   return [searchParams, setSearchParams];
 }
 
-type SetURLSearchParams = (
+export type SetURLSearchParams = (
   nextInit?:
     | URLSearchParamsInit
     | ((prev: URLSearchParams) => URLSearchParamsInit),

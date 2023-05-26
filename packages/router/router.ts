@@ -352,6 +352,7 @@ export interface RouterInit {
   mapRouteProperties?: MapRoutePropertiesFunction;
   future?: Partial<FutureConfig>;
   hydrationData?: HydrationState;
+  window?: Window;
 }
 
 /**
@@ -661,12 +662,6 @@ export const IDLE_BLOCKER: BlockerUnblocked = {
 
 const ABSOLUTE_URL_REGEX = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 
-const isBrowser =
-  typeof window !== "undefined" &&
-  typeof window.document !== "undefined" &&
-  typeof window.document.createElement !== "undefined";
-const isServer = !isBrowser;
-
 const defaultMapRouteProperties: MapRoutePropertiesFunction = (route) => ({
   hasErrorBoundary: Boolean(route.hasErrorBoundary),
 });
@@ -681,6 +676,17 @@ const defaultMapRouteProperties: MapRoutePropertiesFunction = (route) => ({
  * Create a router and listen to history POP navigations
  */
 export function createRouter(init: RouterInit): Router {
+  const routerWindow = init.window
+    ? init.window
+    : typeof window !== "undefined"
+    ? window
+    : undefined;
+  const isBrowser =
+    typeof routerWindow !== "undefined" &&
+    typeof routerWindow.document !== "undefined" &&
+    typeof routerWindow.document.createElement !== "undefined";
+  const isServer = !isBrowser;
+
   invariant(
     init.routes.length > 0,
     "You must provide a non-empty routes array to createRouter"
@@ -1225,10 +1231,15 @@ export function createRouter(init: RouterInit): Router {
       return;
     }
 
-    // Short circuit if it's only a hash change and not a mutation submission
-    // For example, on /page#hash and submit a <Form method="post"> which will
-    // default to a navigation to /page
+    // Short circuit if it's only a hash change and not a revalidation or
+    // mutation submission.
+    //
+    // Ignore on initial page loads because since the initial load will always
+    // be "same hash".  For example, on /page#hash and submit a <Form method="post">
+    // which will default to a navigation to /page
     if (
+      state.initialized &&
+      !isRevalidationRequired &&
       isHashChangeOnly(state.location, location) &&
       !(opts && opts.submission && isMutationMethod(opts.submission.formMethod))
     ) {
@@ -2082,19 +2093,15 @@ export function createRouter(init: RouterInit): Router {
       "Expected a location on the redirect navigation"
     );
     // Check if this an absolute external redirect that goes to a new origin
-    if (
-      ABSOLUTE_URL_REGEX.test(redirect.location) &&
-      isBrowser &&
-      typeof window?.location !== "undefined"
-    ) {
+    if (ABSOLUTE_URL_REGEX.test(redirect.location) && isBrowser) {
       let url = init.history.createURL(redirect.location);
       let isDifferentBasename = stripBasename(url.pathname, basename) == null;
 
-      if (window.location.origin !== url.origin || isDifferentBasename) {
+      if (routerWindow.location.origin !== url.origin || isDifferentBasename) {
         if (replace) {
-          window.location.replace(redirect.location);
+          routerWindow.location.replace(redirect.location);
         } else {
-          window.location.assign(redirect.location);
+          routerWindow.location.assign(redirect.location);
         }
         return;
       }
@@ -2474,7 +2481,13 @@ export function createRouter(init: RouterInit): Router {
   }
 
   function _internalSetRoutes(newRoutes: AgnosticDataRouteObject[]) {
-    inFlightDataRoutes = newRoutes;
+    manifest = {};
+    inFlightDataRoutes = convertRoutesToDataRoutes(
+      newRoutes,
+      mapRouteProperties,
+      undefined,
+      manifest
+    );
   }
 
   router = {
@@ -4009,16 +4022,18 @@ function isHashChangeOnly(a: Location, b: Location): boolean {
   }
 
   if (a.hash === "") {
-    // No hash -> hash
+    // /page -> /page#hash
     return b.hash !== "";
   } else if (a.hash === b.hash) {
-    // current hash -> same hash
+    // /page#hash -> /page#hash
     return true;
   } else if (b.hash !== "") {
-    // current hash -> new hash
+    // /page#hash -> /page#other
     return true;
   }
 
+  // If the hash is removed the browser will re-perform a request to the server
+  // /page#hash -> /page
   return false;
 }
 

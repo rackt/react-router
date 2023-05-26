@@ -1,5 +1,12 @@
 # `@remix-run/router`
 
+## 1.6.2
+
+### Patch Changes
+
+- Fix HMR-driven error boundaries by properly reconstructing new routes and `manifest` in `\_internalSetRoutes` ([#10437](https://github.com/remix-run/react-router/pull/10437))
+- Fix bug where initial data load would not kick off when hash is present ([#10493](https://github.com/remix-run/react-router/pull/10493))
+
 ## 1.6.1
 
 ### Patch Changes

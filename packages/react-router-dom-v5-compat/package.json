@@ -1,6 +1,6 @@
 {
   "name": "react-router-dom-v5-compat",
-  "version": "6.11.1",
+  "version": "6.11.2",
   "description": "Migration path to React Router v6 from v4/5",
   "keywords": [
     "react",
@@ -24,7 +24,7 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "history": "^5.3.0",
-    "react-router": "6.11.1"
+    "react-router": "6.11.2"
   },
   "peerDependencies": {
     "react": ">=16.8",

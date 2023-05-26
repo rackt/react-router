@@ -16,5 +16,4 @@ module.exports = {
       "@web3-storage/multipart-parser"
     ),
   },
-  reporters: ["default"],
 };

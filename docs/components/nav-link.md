@@ -82,7 +82,7 @@ You can pass a render prop as children to customize the content of the `<NavLink
 
 ## `end`
 
-The `end` prop changes the matching logic for the `active` and `pending` states to only match to the "end" of the NavLinks's `to` path. If the URL is longer than `to`, it will no longer be considered active.
+The `end` prop changes the matching logic for the `active` and `pending` states to only match to the "end" of the NavLink's `to` path. If the URL is longer than `to`, it will no longer be considered active.
 
 Without the end prop, this link is always active because every URL matches `/`.
 
