@@ -110,10 +110,10 @@ By default, this component will capture/restore scroll positions on `window`. If
 
 ```tsx
 // Using a selector
-<ScrollRestoration scrollContainer="#container" />
 <div id="container">
   {/* scrollable contents */}
 </div>
+<ScrollRestoration scrollContainer="#container" />
 ```
 
 ```tsx
