@@ -1205,23 +1205,23 @@ function getScrollTarget(
   return scrollContainer ? scrollContainer.current : window;
 }
 
-const getScrollY = (
+function getScrollY(
   scrollContainer: string | React.RefObject<HTMLElement> | undefined
-) => {
+) {
   const el = getScrollTarget(scrollContainer);
   // window has scrollY but normal elements have scrollTop
   return !el ? 0 : (el as Window).scrollY || (el as HTMLElement).scrollTop;
-};
+}
 
-const scrollY = (
+function scrollY(
   elementRef: string | React.RefObject<HTMLElement> | undefined,
   y: number
-) => {
+) {
   const el = getScrollTarget(elementRef);
   if (el) {
     el.scrollTo(0, y);
   }
-};
+}
 
 /**
  * When rendered inside a RouterProvider, will restore scroll positions on navigations
