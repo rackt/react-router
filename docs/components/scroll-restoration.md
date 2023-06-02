@@ -5,6 +5,29 @@ new: true
 
 # `<ScrollRestoration />`
 
+<details>
+  <summary>Type declaration</summary>
+
+```tsx
+declare function ScrollRestoration(
+  props: ScrollRestorationProps
+): null;
+
+interface ScrollRestorationProps {
+  getKey?: GetScrollRestorationKeyFunction;
+  storageKey?: string;
+  scrollContainer?: string | React.RefObject<HTMLElement>;
+}
+
+interface GetScrollRestorationKeyFunction {
+  (location: Location, matches: UseMatchesMatch[]):
+    | string
+    | null;
+}
+```
+
+</details>
+
 This component will emulate the browser's scroll restoration on location changes after loaders have completed to ensure the scroll position is restored to the right spot, even across domains.
 
 <docs-warning>This feature only works if using a data router, see [Picking a Router][pickingarouter]</docs-warning>
@@ -79,6 +102,35 @@ Or you may want to only use the pathname for some paths, and use the normal beha
         location.key;
   }}
 />
+```
+
+## `scrollContainer`
+
+By default, this component will capture/restore scroll positions on `window`. If your UI scrolls via a different container element with `overflow:scroll`, you will want to use that instead of `window`. You can specify that via the `scrollContainer` prop using a selector or a `ref`:
+
+```tsx
+// Using a selector
+<div id="container">
+  {/* scrollable contents */}
+</div>
+<ScrollRestoration scrollContainer="#container" />
+```
+
+```tsx
+// Using a ref:
+let ref = React.useRef(null);
+<div ref={ref}>
+  {/* scrollable contents */}
+</div>
+<ScrollRestoration scrollContainer={ref} />
+```
+
+## `storageKey`
+
+Scroll positions are persisted in `sessionStorage` so they are available across page reloads. The default `sessionStorage` key is `react-router-scroll-positions` but you can provide your own key with the `storageKey` prop.
+
+```tsx
+<ScrollRestoration storageKey="my-app-session-storage-key" />
 ```
 
 ## Preventing Scroll Reset
