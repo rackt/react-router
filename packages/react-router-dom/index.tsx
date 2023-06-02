@@ -1280,7 +1280,7 @@ function useScrollRestoration({
       try {
         // Only load once per session so it persists between unmounts/remounts
         // (i.e., different instance per layout)
-        if (savedScrollPositions) {
+        if (Object.keys(savedScrollPositions).length > 0) {
           return;
         }
         let sessionPositions = sessionStorage.getItem(
