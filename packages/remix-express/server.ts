@@ -36,12 +36,15 @@ export function createRequestHandler({
   build,
   getLoadContext,
   mode = process.env.NODE_ENV,
+  callReactServer,
 }: {
   build: ServerBuild | (() => Promise<ServerBuild>);
   getLoadContext?: GetLoadContextFunction;
   mode?: string;
+  // TODO: types
+  callReactServer?: any;
 }): RequestHandler {
-  let handleRequest = createRemixRequestHandler(build, mode);
+  let handleRequest = createRemixRequestHandler(build, mode, callReactServer);
 
   return async (
     req: express.Request,

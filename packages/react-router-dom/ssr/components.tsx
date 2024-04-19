@@ -666,6 +666,15 @@ export function Scripts(props: ScriptProps) {
         "}).pipeThrough(new TextEncoderStream());"
       : "";
 
+    if (streamScript && staticContext?.actionData) {
+      streamScript +=
+        "window.__remixContext.streamAction = new ReadableStream({" +
+        "start(controller){" +
+        "window.__remixContext.streamControllerAction = controller;" +
+        "}" +
+        "}).pipeThrough(new TextEncoderStream());";
+    }
+
     let contextScript = staticContext
       ? `window.__remixContext = ${serverHandoffString};${streamScript}`
       : " ";

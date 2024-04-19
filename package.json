@@ -148,6 +148,10 @@
     "patchedDependencies": {
       "@changesets/get-dependents-graph@1.3.6": "patches/@changesets__get-dependents-graph@1.3.6.patch",
       "@changesets/assemble-release-plan@5.2.4": "patches/@changesets__assemble-release-plan@5.2.4.patch"
+    },
+    "overrides": {
+      "react": "0.0.0-experimental-96c584661-20240412",
+      "react-dom": "0.0.0-experimental-96c584661-20240412"
     }
   }
 }

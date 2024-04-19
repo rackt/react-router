@@ -1,9 +1,13 @@
 export type { ErrorResponse } from "@remix-run/router";
 
 export type {
+  CreateFromReadableStreamFunction,
   HandleDataRequestFunction,
   HandleDocumentRequestFunction,
   HandleErrorFunction,
+  ReactServerBuild,
+  ReactServerEntryModule,
+  RenderToReadableStreamFunction,
   ServerBuild,
   ServerEntryModule,
 } from "./build";

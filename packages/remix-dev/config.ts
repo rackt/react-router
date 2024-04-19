@@ -16,6 +16,7 @@ interface FutureConfig {
   v3_fetcherPersist: boolean;
   v3_relativeSplatPath: boolean;
   v3_throwAbortReason: boolean;
+  unstable_serverComponents: boolean;
   unstable_singleFetch: boolean;
 }
 
@@ -81,6 +82,11 @@ export interface RemixConfig {
   entryServerFilePath: string;
 
   /**
+   * The absolute path to the entry.react-server file.
+   */
+  entryReactServerFilePath: string;
+
+  /**
    * An object of all available routes, keyed by route id.
    */
   routes: RouteManifest;
@@ -120,9 +126,15 @@ export async function resolveConfig(
 
   let userEntryClientFile = findEntry(appDirectory, "entry.client");
   let userEntryServerFile = findEntry(appDirectory, "entry.server");
+  let userEntryReactServerFile = findEntry(appDirectory, "entry.react-server");
 
   let entryServerFile: string;
-  let entryClientFile = userEntryClientFile || "entry.client.tsx";
+  let entryClientFile =
+    userEntryClientFile ||
+    (appConfig.future?.unstable_serverComponents
+      ? "entry.client-rsc.tsx"
+      : "entry.client.tsx");
+  let entryReactServerFile;
 
   let pkgJson = await PackageJson.load(rootDirectory);
   let deps = pkgJson.content.dependencies ?? {};
@@ -185,6 +197,34 @@ export async function resolveConfig(
     entryServerFile = `entry.server.${serverRuntime}.tsx`;
   }
 
+  if (userEntryReactServerFile) {
+    entryReactServerFile = userEntryReactServerFile;
+  } else {
+    let serverRuntime = deps["@react-router/deno"]
+      ? "deno"
+      : deps["@react-router/cloudflare"]
+      ? "cloudflare"
+      : deps["@react-router/node"]
+      ? "node"
+      : undefined;
+
+    if (!serverRuntime) {
+      let serverRuntimes = [
+        "@react-router/deno",
+        "@react-router/cloudflare",
+        "@react-router/node",
+      ];
+      let formattedList = disjunctionListFormat.format(serverRuntimes);
+      throw new Error(
+        `Could not determine server runtime. Please install one of the following: ${formattedList}`
+      );
+    }
+
+    entryReactServerFile = `entry.react-server.${
+      serverRuntime === "node" ? "node" : "web"
+    }.tsx`;
+  }
+
   let entryClientFilePath = userEntryClientFile
     ? path.resolve(appDirectory, userEntryClientFile)
     : path.resolve(defaultsDirectory, entryClientFile);
@@ -192,6 +232,10 @@ export async function resolveConfig(
   let entryServerFilePath = userEntryServerFile
     ? path.resolve(appDirectory, userEntryServerFile)
     : path.resolve(defaultsDirectory, entryServerFile);
+
+  let entryReactServerFilePath = userEntryReactServerFile
+    ? path.resolve(appDirectory, userEntryReactServerFile)
+    : path.resolve(defaultsDirectory, entryReactServerFile);
 
   let rootRouteFile = findEntry(appDirectory, "root");
   if (!rootRouteFile) {
@@ -215,17 +259,23 @@ export async function resolveConfig(
     }
   }
 
+  let unstable_serverComponents =
+    appConfig.future?.unstable_serverComponents === true;
   let future: FutureConfig = {
     v3_fetcherPersist: appConfig.future?.v3_fetcherPersist === true,
     v3_relativeSplatPath: appConfig.future?.v3_relativeSplatPath === true,
     v3_throwAbortReason: appConfig.future?.v3_throwAbortReason === true,
-    unstable_singleFetch: appConfig.future?.unstable_singleFetch === true,
+    unstable_singleFetch:
+      appConfig.future?.unstable_singleFetch === true ||
+      unstable_serverComponents,
+    unstable_serverComponents,
   };
 
   return {
     appDirectory,
     entryClientFilePath,
     entryServerFilePath,
+    entryReactServerFilePath,
     routes,
     serverModuleFormat,
     future,

@@ -89,36 +89,38 @@ export function createStaticHandlerDataRoutes(
         route.id === "root" || route.module.ErrorBoundary != null,
       id: route.id,
       path: route.path,
-      loader: route.module.loader
-        ? // Need to use RR's version here to permit the optional context even
-          // though we know it'll always be provided in remix
-          (args: RRLoaderFunctionArgs, dataStrategyCtx?: unknown) =>
-            callRouteLoader({
-              request: args.request,
-              params: args.params,
-              loadContext: args.context,
-              loader: route.module.loader!,
-              routeId: route.id,
-              singleFetch: future.unstable_singleFetch === true,
-              response: (
-                dataStrategyCtx as unknown as { response: ResponseStub }
-              )?.response,
-            })
-        : undefined,
-      action: route.module.action
-        ? (args: RRActionFunctionArgs, dataStrategyCtx?: unknown) =>
-            callRouteAction({
-              request: args.request,
-              params: args.params,
-              loadContext: args.context,
-              action: route.module.action!,
-              routeId: route.id,
-              singleFetch: future.unstable_singleFetch === true,
-              response: (
-                dataStrategyCtx as unknown as { response: ResponseStub }
-              )?.response,
-            })
-        : undefined,
+      loader:
+        typeof route.module.loader === "function"
+          ? // Need to use RR's version here to permit the optional context even
+            // though we know it'll always be provided in remix
+            (args: RRLoaderFunctionArgs, dataStrategyCtx?: unknown) =>
+              callRouteLoader({
+                request: args.request,
+                params: args.params,
+                loadContext: args.context,
+                loader: route.module.loader!,
+                routeId: route.id,
+                singleFetch: future.unstable_singleFetch === true,
+                response: (
+                  dataStrategyCtx as unknown as { response: ResponseStub }
+                )?.response,
+              })
+          : route.module.loader,
+      action:
+        typeof route.module.action === "function"
+          ? (args: RRActionFunctionArgs, dataStrategyCtx?: unknown) =>
+              callRouteAction({
+                request: args.request,
+                params: args.params,
+                loadContext: args.context,
+                action: route.module.action!,
+                routeId: route.id,
+                singleFetch: future.unstable_singleFetch === true,
+                response: (
+                  dataStrategyCtx as unknown as { response: ResponseStub }
+                )?.response,
+              })
+          : route.module.action,
       handle: route.module.handle,
     };
 

@@ -1,0 +1,37 @@
+{
+  "type": "module",
+  "name": "rr-rsc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev:prerender": "NODE_ENV=development node server-prerender.js",
+    "dev:react": "NODE_ENV=development REACT_SERVER=1 node --conditions react-server server-react.js",
+    "build": "node ./node_modules/@react-router/dev/dist/cli.js build",
+    "start:prerender": "NODE_ENV=development node server-prerender.js",
+    "start:react": "NODE_ENV=production REACT_SERVER=1 node --conditions react-server server-react.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@react-router/express": "workspace:*",
+    "@react-router/node": "workspace:*",
+    "@react-router/serve": "workspace:*",
+    "express": "^4.17.1",
+    "isbot": "^4.1.0",
+    "react": "0.0.0-experimental-96c584661-20240412",
+    "react-dom": "0.0.0-experimental-96c584661-20240412",
+    "react-router": "workspace:*",
+    "react-router-dom": "workspace:*",
+    "react-server-dom-diy": "0.0.0-experimental-15a3a5622-202404158"
+  },
+  "devDependencies": {
+    "@react-router/dev": "workspace:*",
+    "@types/react": "^18.2.20",
+    "@types/react-dom": "^18.2.7",
+    "typescript": "^5.1.6",
+    "vite": "5.1.3",
+    "vite-tsconfig-paths": "^4.2.1"
+  }
+}

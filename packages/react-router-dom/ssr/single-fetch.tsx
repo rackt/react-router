@@ -29,6 +29,7 @@ interface StreamTransferProps {
   identifier: number;
   reader: ReadableStreamDefaultReader<Uint8Array>;
   textDecoder: TextDecoder;
+  isAction: boolean;
 }
 
 // StreamTransfer recursively renders down chunks of the `serverHandoffStream`
@@ -38,6 +39,7 @@ export function StreamTransfer({
   identifier,
   reader,
   textDecoder,
+  isAction,
 }: StreamTransferProps) {
   // If the user didn't render the <Scripts> component then we don't have to
   // bother streaming anything in
@@ -45,10 +47,19 @@ export function StreamTransfer({
     return null;
   }
 
-  if (!context.renderMeta.streamCache) {
-    context.renderMeta.streamCache = {};
+  let streamCache: typeof context.renderMeta.streamCache = isAction
+    ? context.renderMeta.streamCacheAction
+    : context.renderMeta.streamCache;
+  if (!streamCache) {
+    if (isAction) {
+      context.renderMeta.streamCacheAction = {};
+      streamCache = context.renderMeta.streamCacheAction;
+    } else {
+      context.renderMeta.streamCache = {};
+      streamCache = context.renderMeta.streamCache;
+    }
   }
-  let { streamCache } = context.renderMeta;
+
   let promise = streamCache[identifier];
   if (!promise) {
     promise = streamCache[identifier] = reader
@@ -75,9 +86,9 @@ export function StreamTransfer({
   let scriptTag = value ? (
     <script
       dangerouslySetInnerHTML={{
-        __html: `window.__remixContext.streamController.enqueue(${escapeHtml(
-          JSON.stringify(value)
-        )});`,
+        __html: `window.__remixContext.streamController${
+          isAction ? "Action" : ""
+        }.enqueue(${escapeHtml(JSON.stringify(value))});`,
       }}
     />
   ) : null;
@@ -88,7 +99,9 @@ export function StreamTransfer({
         {scriptTag}
         <script
           dangerouslySetInnerHTML={{
-            __html: `window.__remixContext.streamController.close();`,
+            __html: `window.__remixContext.streamController${
+              isAction ? "Action" : ""
+            }.close();`,
           }}
         />
       </>
@@ -103,6 +116,7 @@ export function StreamTransfer({
             identifier={identifier + 1}
             reader={reader}
             textDecoder={textDecoder}
+            isAction={isAction}
           />
         </React.Suspense>
       </>
@@ -286,6 +300,12 @@ async function fetchAndDecode(url: URL, init?: RequestInit) {
     invariant(res.body, "No response body to decode");
     let decoded = await decodeViaTurboStream(res.body, window);
     return { status: res.status, data: decoded.value };
+  }
+  if (res.headers.get("Content-Type")?.includes("text/x-component")) {
+    invariant(res.body, "No response body to decode");
+    // @ts-expect-error - TODO: Figure out where this comes from
+    let decoded = await window.createFromReadableStream(res.body);
+    return { status: res.status, data: decoded };
   }
 
   // If we didn't get back a turbo-stream response, then we never reached the

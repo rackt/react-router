@@ -487,6 +487,15 @@ export let getServerBuildDirectory = (ctx: ReactRouterPluginContext) =>
       : [])
   );
 
+export let getReactServerBuildDirectory = (ctx: ReactRouterPluginContext) =>
+  path.join(
+    ctx.reactRouterConfig.buildDirectory,
+    "react-server",
+    ...(ctx.serverBundleBuildConfig
+      ? [ctx.serverBundleBuildConfig.serverBundleId]
+      : [])
+  );
+
 let getClientBuildDirectory = (reactRouterConfig: ResolvedVitePluginConfig) =>
   path.join(reactRouterConfig.buildDirectory, "client");
 
@@ -668,6 +677,7 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
       appDirectory,
       entryClientFilePath,
       entryServerFilePath,
+      entryReactServerFilePath,
       future,
       routes,
       serverModuleFormat,
@@ -732,7 +742,9 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
     let viteManifestEnabled = viteUserConfig.build?.manifest === true;
 
     let ssrBuildCtx: ReactRouterPluginSsrBuildContext =
-      viteConfigEnv.isSsrBuild && viteCommand === "build"
+      (future.unstable_serverComponents
+        ? viteConfigEnv.isSsrBuild && !process.env.REACT_SERVER
+        : viteConfigEnv.isSsrBuild) && viteCommand === "build"
         ? {
             isSsrBuild: true,
             getReactRouterServerManifest: async () =>
@@ -742,11 +754,18 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
           }
         : { isSsrBuild: false };
 
+    console.log({
+      REACT_SERVER: process.env.REACT_SERVER,
+      entryReactServerFilePath,
+      entryServerFilePath,
+    });
     ctx = {
       reactRouterConfig,
       rootDirectory,
       entryClientFilePath,
-      entryServerFilePath,
+      entryServerFilePath: process.env.REACT_SERVER
+        ? entryReactServerFilePath
+        : entryServerFilePath,
       viteManifestEnabled,
       ...ssrBuildCtx,
     };
@@ -795,6 +814,50 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
       export const publicPath = ${JSON.stringify(
         ctx.reactRouterConfig.publicPath
       )};
+      export const entry = { module: entryServer };
+      export const routes = {
+        ${Object.keys(routes)
+          .map((key, index) => {
+            let route = routes[key]!;
+            return `${JSON.stringify(key)}: {
+          id: ${JSON.stringify(route.id)},
+          parentId: ${JSON.stringify(route.parentId)},
+          path: ${JSON.stringify(route.path)},
+          index: ${JSON.stringify(route.index)},
+          caseSensitive: ${JSON.stringify(route.caseSensitive)},
+          module: route${index}
+        }`;
+          })
+          .join(",\n  ")}
+      };`;
+  };
+
+  let getReactServerEntry = async () => {
+    invariant(viteConfig, "viteconfig required to generate the server entry");
+
+    let routes = ctx.serverBundleBuildConfig
+      ? // For server bundle builds, the server build should only import the
+        // routes for this bundle rather than importing all routes
+        ctx.serverBundleBuildConfig.routes
+      : // Otherwise, all routes are imported as usual
+        ctx.reactRouterConfig.routes;
+
+    return `
+    import * as entryServer from ${JSON.stringify(
+      resolveFileUrl(ctx, ctx.entryServerFilePath)
+    )};
+    ${Object.keys(routes)
+      .map((key, index) => {
+        let route = routes[key]!;
+        return `import * as route${index} from ${JSON.stringify(
+          resolveFileUrl(
+            ctx,
+            resolveRelativeRouteFilePath(route, ctx.reactRouterConfig)
+          )
+        )};`;
+      })
+      .join("\n")}
+      export const future = ${JSON.stringify(ctx.reactRouterConfig.future)};
       export const entry = { module: entryServer };
       export const routes = {
         ${Object.keys(routes)
@@ -1149,7 +1212,12 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
                         ssrEmitAssets: true,
                         copyPublicDir: false, // Assets in the public directory are only used by the client
                         manifest: true, // We need the manifest to detect SSR-only assets
-                        outDir: getServerBuildDirectory(ctx),
+                        outDir:
+                          ctx.reactRouterConfig.future
+                            .unstable_serverComponents &&
+                          process.env.REACT_SERVER
+                            ? getReactServerBuildDirectory(ctx)
+                            : getServerBuildDirectory(ctx),
                         rollupOptions: {
                           ...baseRollupOptions,
                           preserveEntrySignatures: "exports-only",
@@ -1405,7 +1473,9 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
           let clientBuildDirectory = getClientBuildDirectory(
             ctx.reactRouterConfig
           );
-          let serverBuildDirectory = getServerBuildDirectory(ctx);
+          let serverBuildDirectory = process.env.REACT_SERVER
+            ? getReactServerBuildDirectory(ctx)
+            : getServerBuildDirectory(ctx);
 
           let ssrViteManifest = await loadViteManifest(serverBuildDirectory);
           let clientViteManifest = await loadViteManifest(clientBuildDirectory);
@@ -1481,6 +1551,17 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
       async load(id) {
         switch (id) {
           case VirtualModule.resolve(serverBuildId): {
+            if (
+              ctx.reactRouterConfig.future.unstable_serverComponents &&
+              process.env.REACT_SERVER
+            ) {
+              console.log(
+                "-------------- HERE --------------",
+                ctx.reactRouterConfig.future.unstable_serverComponents &&
+                  process.env.REACT_SERVER
+              );
+              return await getReactServerEntry();
+            }
             return await getServerEntry();
           }
           case VirtualModule.resolve(serverManifestId): {
@@ -1596,10 +1677,23 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
     {
       name: "react-router-route-exports",
       async transform(code, id, options) {
-        if (options?.ssr) return;
+        const rsc = ctx?.reactRouterConfig.future.unstable_serverComponents;
+        if (options?.ssr && !rsc) {
+          return;
+        }
 
         let route = getRoute(ctx.reactRouterConfig, id);
         if (!route) return;
+
+        let [filepath] = id.split("?");
+
+        if (rsc && process.env.REACT_SERVER) {
+          return removeExports(code, CLIENT_ROUTE_EXPORTS, {
+            sourceMaps: true,
+            filename: id,
+            sourceFileName: filepath,
+          });
+        }
 
         if (!ctx.reactRouterConfig.ssr) {
           let serverOnlyExports = esModuleLexer(code)[1]
@@ -1628,8 +1722,6 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
             }
           }
         }
-
-        let [filepath] = id.split("?");
 
         return removeExports(code, SERVER_ONLY_ROUTE_EXPORTS, {
           sourceMaps: true,
@@ -1776,6 +1868,9 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
         return modules;
       },
     },
+    ...(reactRouterUserConfig?.future?.unstable_serverComponents
+      ? reactRouterReactServerPlugin()
+      : []),
   ];
 };
 
@@ -1951,4 +2046,33 @@ async function handleSpaMode(
 
   // Cleanup - we no longer need the server build assets
   fse.removeSync(serverBuildDirectoryPath);
+}
+
+function reactRouterReactServerPlugin(): Vite.Plugin[] {
+  return [
+    // TODO: RSC transform plugins.
+    {
+      name: "react-router-react-server",
+      config(config) {
+        if (!process.env.REACT_SERVER) return;
+        return {
+          optimizeDeps: {
+            include: [
+              "react",
+              "react/jsx-runtime",
+              "react/jsx-dev-runtime",
+              "react-server-dom-diy/server",
+            ],
+          },
+          ssr: {
+            resolve: {
+              externalConditions: ["react-server", "..."],
+              conditions: ["react-server", "..."],
+              noExternal: true,
+            },
+          },
+        };
+      },
+    },
+  ];
 }

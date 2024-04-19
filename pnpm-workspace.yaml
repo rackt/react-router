@@ -16,3 +16,4 @@ packages:
   - "playground/compiler"
   - "playground/compiler-express"
   - "playground/compiler-spa"
+  - "playground/rsc"

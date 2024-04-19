@@ -8,6 +8,8 @@ overrides:
   '@types/react': ^18.2.18
   '@types/react-dom': ^18.2.7
   jsdom: 22.1.0
+  react: 0.0.0-experimental-96c584661-20240412
+  react-dom: 0.0.0-experimental-96c584661-20240412
 
 patchedDependencies:
   '@changesets/assemble-release-plan@5.2.4':
@@ -89,7 +91,7 @@ importers:
         version: 5.17.0
       '@testing-library/react':
         specifier: ^13.4.0
-        version: 13.4.0(react-dom@18.2.0)(react@18.2.0)
+        version: 13.4.0(react-dom@0.0.0-experimental-96c584661-20240412)(react@0.0.0-experimental-96c584661-20240412)
       '@testing-library/user-event':
         specifier: ^14.5.2
         version: 14.5.2(@testing-library/dom@8.17.1)
@@ -208,14 +210,14 @@ importers:
         specifier: ^2.4.2
         version: 2.4.2
       react:
-        specifier: ^18.2.0
-        version: 18.2.0
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
       react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
       react-test-renderer:
         specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
+        version: 18.2.0(react@0.0.0-experimental-96c584661-20240412)
       remark-gfm:
         specifier: 3.0.1
         version: 3.0.1
@@ -349,11 +351,11 @@ importers:
         specifier: ^2.7.1
         version: 2.8.8
       react:
-        specifier: ^18.2.0
-        version: 18.2.0
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
       react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
       react-router-dom:
         specifier: workspace:*
         version: link:../packages/react-router-dom
@@ -406,11 +408,11 @@ importers:
         specifier: ^4.1.0
         version: 4.4.0
       react:
-        specifier: ^18.2.0
-        version: 18.2.0
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
       react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
       react-router:
         specifier: workspace:*
         version: link:../../../packages/react-router
@@ -470,11 +472,11 @@ importers:
         specifier: ^4.1.0
         version: 4.4.0
       react:
-        specifier: ^18.2.0
-        version: 18.2.0
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
       react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
       react-router:
         specifier: workspace:*
         version: link:../../../packages/react-router
@@ -523,8 +525,8 @@ importers:
         version: link:../router
     devDependencies:
       react:
-        specifier: ^18.2.0
-        version: 18.2.0
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
       react-router-dom:
         specifier: workspace:*
         version: link:../react-router-dom
@@ -548,11 +550,11 @@ importers:
         specifier: workspace:*
         version: link:../remix-testing
       react:
-        specifier: ^18.2.0
-        version: 18.2.0
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
       react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
 
   packages/react-router-dom-v5-compat:
     dependencies:
@@ -566,17 +568,17 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       react:
-        specifier: '>=16.8'
-        version: 18.2.0
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
       react-dom:
-        specifier: '>=16.8'
-        version: 18.2.0(react@18.2.0)
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
       react-router:
         specifier: workspace:*
         version: link:../react-router
       react-router-dom:
         specifier: 4 || 5
-        version: 5.3.4(react@18.2.0)
+        version: 5.3.4(react@0.0.0-experimental-96c584661-20240412)
       turbo-stream:
         specifier: ^2.0.0
         version: 2.0.0
@@ -594,17 +596,17 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       react:
-        specifier: ^18.2.0
-        version: 18.2.0
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
       react-native:
         specifier: ^0.69.5
-        version: 0.69.5(@babel/core@7.24.3)(@babel/preset-env@7.22.9)(react@18.2.0)
+        version: 0.69.5(@babel/core@7.24.3)(@babel/preset-env@7.22.9)(react@0.0.0-experimental-96c584661-20240412)
       react-router-native:
         specifier: workspace:*
         version: 'link:'
       react-test-renderer:
         specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
+        version: 18.2.0(react@0.0.0-experimental-96c584661-20240412)
 
   packages/remix-dev:
     dependencies:
@@ -753,6 +755,9 @@ importers:
       fast-glob:
         specifier: 3.2.11
         version: 3.2.11
+      react-server-dom-diy:
+        specifier: 0.0.0-experimental-15a3a5622-202404158
+        version: 0.0.0-experimental-15a3a5622-202404158(react-dom@0.0.0-experimental-96c584661-20240412)(react@0.0.0-experimental-96c584661-20240412)
       strip-ansi:
         specifier: ^6.0.1
         version: 6.0.1
@@ -771,6 +776,9 @@ importers:
       '@react-router/node':
         specifier: workspace:*
         version: link:../remix-node
+      '@react-router/server-runtime':
+        specifier: workspace:*
+        version: link:../remix-server-runtime
     devDependencies:
       '@types/express':
         specifier: ^4.17.9
@@ -924,11 +932,11 @@ importers:
         specifier: ^29.7.0
         version: 29.7.0
       react:
-        specifier: ^18.2.0
-        version: 18.2.0
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
       react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
       typescript:
         specifier: ^5.1.6
         version: 5.1.6
@@ -947,11 +955,11 @@ importers:
         specifier: ^4.1.0
         version: 4.4.0
       react:
-        specifier: ^18.2.0
-        version: 18.2.0
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
       react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
       react-router:
         specifier: workspace:*
         version: link:../../packages/react-router
@@ -999,11 +1007,11 @@ importers:
         specifier: ^1.10.0
         version: 1.10.0
       react:
-        specifier: ^18.2.0
-        version: 18.2.0
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
       react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
       react-router:
         specifier: workspace:*
         version: link:../../packages/react-router
@@ -1048,11 +1056,11 @@ importers:
         specifier: workspace:*
         version: link:../../packages/remix-node
       react:
-        specifier: ^18.2.0
-        version: 18.2.0
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
       react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
       react-router:
         specifier: workspace:*
         version: link:../../packages/react-router
@@ -1074,6 +1082,58 @@ importers:
         version: 5.4.5
       vite:
         specifier: ^5.1.0
+        version: 5.1.3(@types/node@18.19.26)
+      vite-tsconfig-paths:
+        specifier: ^4.2.1
+        version: 4.3.2(typescript@5.4.5)(vite@5.1.3)
+
+  playground/rsc:
+    dependencies:
+      '@react-router/express':
+        specifier: workspace:*
+        version: link:../../packages/remix-express
+      '@react-router/node':
+        specifier: workspace:*
+        version: link:../../packages/remix-node
+      '@react-router/serve':
+        specifier: workspace:*
+        version: link:../../packages/remix-serve
+      express:
+        specifier: ^4.17.1
+        version: 4.19.2
+      isbot:
+        specifier: ^4.1.0
+        version: 4.4.0
+      react:
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412
+      react-dom:
+        specifier: 0.0.0-experimental-96c584661-20240412
+        version: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
+      react-router:
+        specifier: workspace:*
+        version: link:../../packages/react-router
+      react-router-dom:
+        specifier: workspace:*
+        version: link:../../packages/react-router-dom
+      react-server-dom-diy:
+        specifier: 0.0.0-experimental-15a3a5622-202404158
+        version: 0.0.0-experimental-15a3a5622-202404158(react-dom@0.0.0-experimental-96c584661-20240412)(react@0.0.0-experimental-96c584661-20240412)
+    devDependencies:
+      '@react-router/dev':
+        specifier: workspace:*
+        version: link:../../packages/remix-dev
+      '@types/react':
+        specifier: ^18.2.18
+        version: 18.2.18
+      '@types/react-dom':
+        specifier: ^18.2.7
+        version: 18.2.7
+      typescript:
+        specifier: ^5.1.6
+        version: 5.4.5
+      vite:
+        specifier: 5.1.3
         version: 5.1.3(@types/node@18.19.26)
       vite-tsconfig-paths:
         specifier: ^4.2.1
@@ -5362,7 +5422,7 @@ packages:
       lodash: 4.17.21
       minimist: 1.2.6
       prompts: 2.4.2
-      react-native: 0.69.5(@babel/core@7.24.3)(@babel/preset-env@7.22.9)(react@18.2.0)
+      react-native: 0.69.5(@babel/core@7.24.3)(@babel/preset-env@7.22.9)(react@0.0.0-experimental-96c584661-20240412)
       semver: 6.3.1
     transitivePeerDependencies:
       - '@babel/core'
@@ -5649,18 +5709,18 @@ packages:
       redent: 3.0.0
     dev: false
 
-  /@testing-library/react@13.4.0(react-dom@18.2.0)(react@18.2.0):
+  /@testing-library/react@13.4.0(react-dom@0.0.0-experimental-96c584661-20240412)(react@0.0.0-experimental-96c584661-20240412):
     resolution: {integrity: sha512-sXOGON+WNTh3MLE9rve97ftaZukN3oNf2KjDy7YTx6hcTO2uuLHuCGynMDhFwGw/jYf4OJ2Qk0i4i79qMNNkyw==}
     engines: {node: '>=12'}
     peerDependencies:
-      react: ^18.0.0
-      react-dom: ^18.0.0
+      react: 0.0.0-experimental-96c584661-20240412
+      react-dom: 0.0.0-experimental-96c584661-20240412
     dependencies:
       '@babel/runtime': 7.22.6
       '@testing-library/dom': 8.17.1
       '@types/react-dom': 18.2.7
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
+      react: 0.0.0-experimental-96c584661-20240412
+      react-dom: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
     dev: false
 
   /@testing-library/user-event@14.5.2(@testing-library/dom@8.17.1):
@@ -6492,6 +6552,12 @@ packages:
     dependencies:
       acorn: 8.11.3
 
+  /acorn-loose@8.4.0:
+    resolution: {integrity: sha512-M0EUka6rb+QC4l9Z3T0nJEzNOO7JcoJlYMrBlyBCiFSXRyxjLKayd4TbQs2FDRWQU1h9FR7QVNHt+PEaoNL5rQ==}
+    engines: {node: '>=0.4.0'}
+    dependencies:
+      acorn: 8.11.3
+
   /acorn-walk@8.3.2:
     resolution: {integrity: sha512-cjkyv4OtNCIeqhHrfS81QWXoCBPExR/J62oyEqepVw8WaQeSqpW2uhuLPh1m9eWhDuOo/jUXVTlifvesOWp/4A==}
     engines: {node: '>=0.4.0'}
@@ -6500,12 +6566,6 @@ packages:
     resolution: {integrity: sha512-Y9rRfJG5jcKOE0CLisYbojUjIrIEE7AGMzA/Sm4BslANhbS+cDMpgBdcPT91oJ7OuJ9hYJBx59RjbhxVnrF8Xg==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-
-  /acorn@8.8.0:
-    resolution: {integrity: sha512-QOxyigPVrpZ2GXT+PFyZTl6TtOFc5egxHIP9IlQ+RbupQuX4RkT/Bee4/kQuC02Xkzg84JcT7oLYtDIQxp+v7w==}
-    engines: {node: '>=0.4.0'}
-    hasBin: true
-    dev: false
 
   /agent-base@6.0.2:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
@@ -6629,7 +6689,7 @@ packages:
   /array-buffer-byte-length@1.0.0:
     resolution: {integrity: sha512-LPuwb2P+NrQw3XhxGc36+XSvuBPopovXYTR9Ew++Du9Yb/bx5AzBfrIsBoj0EZUifjQU+sHL21sseZ3jerWO/A==}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       is-array-buffer: 3.0.2
     dev: false
 
@@ -6694,7 +6754,7 @@ packages:
     resolution: {integrity: sha512-roTU0KWIOmJ4DRLmwKd19Otg0/mT3qPNt0Qb3GWW8iObuZXxrjB/pzn0R3hqpRSWg4HCwqx+0vwOnWnvlOyeIA==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       define-properties: 1.2.0
       es-abstract: 1.22.1
       es-shim-unscopables: 1.0.0
@@ -6744,9 +6804,9 @@ packages:
     engines: {node: '>= 0.4'}
     dependencies:
       array-buffer-byte-length: 1.0.0
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       define-properties: 1.2.0
-      get-intrinsic: 1.2.1
+      get-intrinsic: 1.2.4
       is-array-buffer: 3.0.2
       is-shared-array-buffer: 1.0.2
     dev: false
@@ -7373,13 +7433,6 @@ packages:
       union-value: 1.0.1
       unset-value: 1.0.0
     dev: true
-
-  /call-bind@1.0.2:
-    resolution: {integrity: sha512-7O+FbCihrB5WGbFYesctwmTKae6rOiIzmz1icreWJ+0aA7LJfuqhEso2T9ncpcFtzMQtzXf2QGGueWJGTYsqrA==}
-    dependencies:
-      function-bind: 1.1.1
-      get-intrinsic: 1.2.1
-    dev: false
 
   /call-bind@1.0.7:
     resolution: {integrity: sha512-GHTSNSYICQ7scH7sZ+M2rFopRoLh8t2bLSW6BbgrtLsahOIB5iyAVJf9GjWK3cYTDaMj4XdBpM1cA6pIS0Kv2w==}
@@ -8311,17 +8364,17 @@ packages:
       array-buffer-byte-length: 1.0.0
       arraybuffer.prototype.slice: 1.0.1
       available-typed-arrays: 1.0.5
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       es-set-tostringtag: 2.0.1
       es-to-primitive: 1.2.1
       function.prototype.name: 1.1.5
-      get-intrinsic: 1.2.1
+      get-intrinsic: 1.2.4
       get-symbol-description: 1.0.0
       globalthis: 1.0.3
       gopd: 1.0.1
       has: 1.0.3
       has-property-descriptors: 1.0.0
-      has-proto: 1.0.1
+      has-proto: 1.0.3
       has-symbols: 1.0.3
       internal-slot: 1.0.5
       is-array-buffer: 3.0.2
@@ -8332,7 +8385,7 @@ packages:
       is-string: 1.0.7
       is-typed-array: 1.1.12
       is-weakref: 1.0.2
-      object-inspect: 1.12.3
+      object-inspect: 1.13.1
       object-keys: 1.1.1
       object.assign: 4.1.4
       regexp.prototype.flags: 1.5.0
@@ -8446,7 +8499,7 @@ packages:
     resolution: {integrity: sha512-g3OMbtlwY3QewlqAiMLI47KywjWZoEytKr8pf6iTC8uJq5bIAH52Z9pnQ8pVL6whrCto53JZDuUIsifGeLorTg==}
     engines: {node: '>= 0.4'}
     dependencies:
-      get-intrinsic: 1.2.1
+      get-intrinsic: 1.2.4
       has: 1.0.3
       has-tostringtag: 1.0.0
     dev: false
@@ -9502,9 +9555,6 @@ packages:
     requiresBuild: true
     optional: true
 
-  /function-bind@1.1.1:
-    resolution: {integrity: sha512-yIovAzMX49sF8Yl58fSCWJ5svSLuaibPxXQJFLmBObTuCr0Mf1KiPopGM9NiFjiYBCbfaa2Fh6breQ6ANVTI0A==}
-
   /function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
@@ -9512,7 +9562,7 @@ packages:
     resolution: {integrity: sha512-uN7m/BzVKQnCUF/iW8jYea67v++2u7m5UgENbHRtdDVclOUP+FMPlCNdmk0h/ysGyo2tavMJEDqJAkJdRa1vMA==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       define-properties: 1.2.0
       es-abstract: 1.22.1
       functions-have-names: 1.2.3
@@ -9540,21 +9590,13 @@ packages:
     resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
     engines: {node: 6.* || 8.* || >= 10.*}
 
-  /get-intrinsic@1.2.1:
-    resolution: {integrity: sha512-2DcsyfABl+gVHEfCOaTrWgyt+tb6MSEGmKq+kI5HwLbIYgjgmMcV8KQ41uaKz1xxUcn9tJtgFbQUEVcEbd0FYw==}
-    dependencies:
-      function-bind: 1.1.1
-      has: 1.0.3
-      has-proto: 1.0.1
-      has-symbols: 1.0.3
-
   /get-intrinsic@1.2.4:
     resolution: {integrity: sha512-5uYhsJH8VJBTv7oslg4BznJYhDoRI6waYCxMmCdnTrcCrHA/fCFKoTFz2JKKE0HdDFUF7/oQuhzumXJK7paBRQ==}
     engines: {node: '>= 0.4'}
     dependencies:
       es-errors: 1.3.0
       function-bind: 1.1.2
-      has-proto: 1.0.1
+      has-proto: 1.0.3
       has-symbols: 1.0.3
       hasown: 2.0.2
 
@@ -9589,8 +9631,8 @@ packages:
     resolution: {integrity: sha512-2EmdH1YvIQiZpltCNgkuiUnyukzxM/R6NDJX31Ke3BG1Nq5b0S2PhX59UKi9vZpPDQVdqn+1IcaAwnzTT5vCjw==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
-      get-intrinsic: 1.2.1
+      call-bind: 1.0.7
+      get-intrinsic: 1.2.4
     dev: false
 
   /get-symbol-description@1.0.2:
@@ -9709,7 +9751,7 @@ packages:
   /gopd@1.0.1:
     resolution: {integrity: sha512-d65bNlIadxvpb/A2abVdlqKqV563juRnZ1Wtk6s1sIR8uNsXR70xqIzVqxVf1eTqDunwT2MkczEeaezCKTZhwA==}
     dependencies:
-      get-intrinsic: 1.2.1
+      get-intrinsic: 1.2.4
 
   /graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
@@ -9753,7 +9795,7 @@ packages:
   /has-property-descriptors@1.0.0:
     resolution: {integrity: sha512-62DVLZGoiEBDHQyqG4w9xCuZ7eJEwNmJRWw2VY84Oedb7WFcA27fiEVe8oUQx9hAUJ4ekurquucTGwsyO1XGdQ==}
     dependencies:
-      get-intrinsic: 1.2.1
+      get-intrinsic: 1.2.4
     dev: false
 
   /has-property-descriptors@1.0.2:
@@ -9761,14 +9803,9 @@ packages:
     dependencies:
       es-define-property: 1.0.0
 
-  /has-proto@1.0.1:
-    resolution: {integrity: sha512-7qE+iP+O+bgF9clE5+UoBFzE65mlBiVj3tKCrlNQ0Ogwm0BjpT/gK4SlLYDMybDh5I3TCTKnPPa0oMG7JDYrhg==}
-    engines: {node: '>= 0.4'}
-
   /has-proto@1.0.3:
     resolution: {integrity: sha512-SJ1amZAJUiZS+PhsVLf5tGydlaVB8EdFpaSO4gmiUKUOxk8qzn5AIy4ZeJUmh22znIdk/uMAUT2pl3FxzVUH+Q==}
     engines: {node: '>= 0.4'}
-    dev: false
 
   /has-symbols@1.0.3:
     resolution: {integrity: sha512-l3LCuF6MgDNwTDKkdYGEihYjt5pRPbEg46rtlmnSPlUbgmB8LOIrKJbYYFBSbnPaJexMKtiPO8hmeRjRz2Td+A==}
@@ -9823,7 +9860,8 @@ packages:
     resolution: {integrity: sha512-f2dvO0VU6Oej7RkWJGrehjbzMAjFp5/VKPp5tTpWIV4JHHZK1/BxbFRtf/siA2SWTe09caDmVtYYzWEIbBS4zw==}
     engines: {node: '>= 0.4.0'}
     dependencies:
-      function-bind: 1.1.1
+      function-bind: 1.1.2
+    dev: false
 
   /hasown@2.0.2:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
@@ -10078,7 +10116,7 @@ packages:
     resolution: {integrity: sha512-Y+R5hJrzs52QCG2laLn4udYVnxsfny9CpOhNhUvk/SSSVyF6T27FzRbF0sroPidSu3X8oEAkOn2K804mjpt6UQ==}
     engines: {node: '>= 0.4'}
     dependencies:
-      get-intrinsic: 1.2.1
+      get-intrinsic: 1.2.4
       has: 1.0.3
       side-channel: 1.0.6
     dev: false
@@ -10141,8 +10179,8 @@ packages:
   /is-array-buffer@3.0.2:
     resolution: {integrity: sha512-y+FyyR/w8vfIRq4eQcM1EYgSTnmHXPqaF+IgzgraytCFq5Xh8lllDVmAZolPJiZttZLeFSINPYMaEJ7/vWUa1w==}
     dependencies:
-      call-bind: 1.0.2
-      get-intrinsic: 1.2.1
+      call-bind: 1.0.7
+      get-intrinsic: 1.2.4
       is-typed-array: 1.1.12
     dev: false
 
@@ -10180,7 +10218,7 @@ packages:
     resolution: {integrity: sha512-gDYaKHJmnj4aWxyj6YHyXVpdQawtVLHU5cb+eztPGczf6cjuTdwve5ZIEfgXqH4e57An1D1AKf8CZ3kYrQRqYA==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       has-tostringtag: 1.0.0
     dev: false
 
@@ -10421,7 +10459,7 @@ packages:
     resolution: {integrity: sha512-kvRdxDsxZjhzUX07ZnLydzS1TU/TJlTUHHY4YLL87e37oUA49DfkLqgy+VjFocowy29cKvcSiu+kIv728jTTVg==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       has-tostringtag: 1.0.0
     dev: false
 
@@ -10433,7 +10471,7 @@ packages:
   /is-shared-array-buffer@1.0.2:
     resolution: {integrity: sha512-sqN2UDu1/0y6uvXyStCOzyhAjCSlHceFoMKJW8W9EU9cvic/QdsZ0kEU93HEy3IUEFZIiH/3w+AH/UQbPHNdhA==}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
     dev: false
 
   /is-shared-array-buffer@1.0.3:
@@ -10500,7 +10538,7 @@ packages:
   /is-weakref@1.0.2:
     resolution: {integrity: sha512-qctsuLZmIQ0+vSSMfoVvyFe2+GSEvnmZ2ezTup1SBse9+twCCeial6EEi3Nc2KFcf6+qz2FBPnjXsk8xhKSaPQ==}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
     dev: false
 
   /is-weakset@2.0.3:
@@ -13150,10 +13188,6 @@ packages:
     resolution: {integrity: sha512-RSn9F68PjH9HqtltsSnqYC1XXoWe9Bju5+213R98cNGttag9q9yAOTzdbsqvIa7aNm5WffBZFpWYr2aWrklWAw==}
     engines: {node: '>= 6'}
 
-  /object-inspect@1.12.3:
-    resolution: {integrity: sha512-geUvdk7c+eizMNUDkRpW1wJwgfOiOeHbxBR/hLXK1aT6zmVSO0jsQcs7fj6MGw89jC/cjGfLcNOrtMYtGqm81g==}
-    dev: false
-
   /object-inspect@1.13.1:
     resolution: {integrity: sha512-5qoj1RUiKOMsCCNLV1CBiPYE10sziTsnmNxkAI/rZhiD63CF7IqdFGC/XzjWjpSgLf0LxXX3bDFIh0E18f6UhQ==}
 
@@ -13173,7 +13207,7 @@ packages:
     resolution: {integrity: sha512-1mxKf0e58bvyjSCtKYY4sRe9itRk3PJpquJOjeIkz885CczcI4IvJJDLPS72oowuSh+pBxUFROpX+TU++hxhZQ==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       define-properties: 1.2.0
       has-symbols: 1.0.3
       object-keys: 1.1.1
@@ -13855,14 +13889,13 @@ packages:
       - utf-8-validate
     dev: true
 
-  /react-dom@18.2.0(react@18.2.0):
-    resolution: {integrity: sha512-6IMTriUmvsjHUjNtEDudZfuDQUoWXVxKHhlEGSk81n4YFS+r/Kl99wXiwlVXtPBtJenozv2P+hxDsw9eA7Xo6g==}
+  /react-dom@0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412):
+    resolution: {integrity: sha512-yHXZyEKBkr2bbDVYyVTmNv1oLd+XPIMu41zAwyB6VspgSvGL+HXfFlVLSYwRjGdw3Y9LsgAdDLNgrhtEwlf05A==}
     peerDependencies:
-      react: ^18.2.0
+      react: 0.0.0-experimental-96c584661-20240412
     dependencies:
-      loose-envify: 1.4.0
-      react: 18.2.0
-      scheduler: 0.23.0
+      react: 0.0.0-experimental-96c584661-20240412
+      scheduler: 0.0.0-experimental-96c584661-20240412
 
   /react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
@@ -13890,13 +13923,13 @@ packages:
     resolution: {integrity: sha512-+4JpbIx42zGTONhBTIXSyfyHICHC29VTvhkkoUOJAh/XHPEixpuBduYgf6Y4y9wsN1ARlQhBBoptTvXvAFQf5g==}
     dev: true
 
-  /react-native@0.69.5(@babel/core@7.24.3)(@babel/preset-env@7.22.9)(react@18.2.0):
+  /react-native@0.69.5(@babel/core@7.24.3)(@babel/preset-env@7.22.9)(react@0.0.0-experimental-96c584661-20240412):
     resolution: {integrity: sha512-4Psrj1nDMLQjBXVH8n3UikzOHQc8+sa6NbxZQR0XKtpx8uC3HiJBgX+/FIum/RWxfi5J/Dt/+A2gLGmq2Hps8g==}
     engines: {node: '>=14'}
     deprecated: 'Issues and pull requests filed against this version are not supported. See the React Native release support policy to learn more: https://github.com/reactwg/react-native-releases#releases-support-policy'
     hasBin: true
     peerDependencies:
-      react: 18.0.0
+      react: 0.0.0-experimental-96c584661-20240412
     dependencies:
       '@jest/create-cache-key-function': 27.5.1
       '@react-native-community/cli': 8.0.6(@babel/core@7.24.3)(react-native@0.69.5)
@@ -13920,16 +13953,16 @@ packages:
       nullthrows: 1.1.1
       pretty-format: 26.6.2
       promise: 8.2.0
-      react: 18.2.0
+      react: 0.0.0-experimental-96c584661-20240412
       react-devtools-core: 4.24.0
       react-native-codegen: 0.69.2(@babel/preset-env@7.22.9)
       react-native-gradle-plugin: 0.0.7
       react-refresh: 0.4.3
-      react-shallow-renderer: 16.15.0(react@18.2.0)
+      react-shallow-renderer: 16.15.0(react@0.0.0-experimental-96c584661-20240412)
       regenerator-runtime: 0.13.11
       scheduler: 0.21.0
       stacktrace-parser: 0.1.10
-      use-sync-external-store: 1.2.0(react@18.2.0)
+      use-sync-external-store: 1.2.0(react@0.0.0-experimental-96c584661-20240412)
       whatwg-fetch: 3.6.2
       ws: 6.2.2
     transitivePeerDependencies:
@@ -13951,25 +13984,25 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /react-router-dom@5.3.4(react@18.2.0):
+  /react-router-dom@5.3.4(react@0.0.0-experimental-96c584661-20240412):
     resolution: {integrity: sha512-m4EqFMHv/Ih4kpcBCONHbkT68KoAeHN4p3lAGoNryfHi0dMy0kCzEZakiKRsvg5wHZ/JLrLW8o8KomWiz/qbYQ==}
     peerDependencies:
-      react: '>=15'
+      react: 0.0.0-experimental-96c584661-20240412
     dependencies:
       '@babel/runtime': 7.22.6
       history: 4.10.1
       loose-envify: 1.4.0
       prop-types: 15.8.1
-      react: 18.2.0
-      react-router: 5.3.4(react@18.2.0)
+      react: 0.0.0-experimental-96c584661-20240412
+      react-router: 5.3.4(react@0.0.0-experimental-96c584661-20240412)
       tiny-invariant: 1.3.3
       tiny-warning: 1.0.3
     dev: false
 
-  /react-router@5.3.4(react@18.2.0):
+  /react-router@5.3.4(react@0.0.0-experimental-96c584661-20240412):
     resolution: {integrity: sha512-Ys9K+ppnJah3QuaRiLxk+jDWOR1MekYQrlytiXxC1RyfbdsZkS5pvKAzCCr031xHixZwpnsYNT5xysdFHQaYsA==}
     peerDependencies:
-      react: '>=15'
+      react: 0.0.0-experimental-96c584661-20240412
     dependencies:
       '@babel/runtime': 7.22.6
       history: 4.10.1
@@ -13977,36 +14010,45 @@ packages:
       loose-envify: 1.4.0
       path-to-regexp: 1.8.0
       prop-types: 15.8.1
-      react: 18.2.0
+      react: 0.0.0-experimental-96c584661-20240412
       react-is: 16.13.1
       tiny-invariant: 1.3.3
       tiny-warning: 1.0.3
     dev: false
 
-  /react-shallow-renderer@16.15.0(react@18.2.0):
+  /react-server-dom-diy@0.0.0-experimental-15a3a5622-202404158(react-dom@0.0.0-experimental-96c584661-20240412)(react@0.0.0-experimental-96c584661-20240412):
+    resolution: {integrity: sha512-2LsyNb5FkyFwT9syB0Lf4tnBB9Pq18hiPtbVho08tNicGU+Ji4pY/eet/8LlSN/0jsMKpmTceBMyElOaF10ANA==}
+    engines: {node: '>=0.10.0'}
+    peerDependencies:
+      react: 0.0.0-experimental-96c584661-20240412
+      react-dom: 0.0.0-experimental-96c584661-20240412
+    dependencies:
+      acorn-loose: 8.4.0
+      react: 0.0.0-experimental-96c584661-20240412
+      react-dom: 0.0.0-experimental-96c584661-20240412(react@0.0.0-experimental-96c584661-20240412)
+
+  /react-shallow-renderer@16.15.0(react@0.0.0-experimental-96c584661-20240412):
     resolution: {integrity: sha512-oScf2FqQ9LFVQgA73vr86xl2NaOIX73rh+YFqcOp68CWj56tSfgtGKrEbyhCj0rSijyG9M1CYprTh39fBi5hzA==}
     peerDependencies:
-      react: ^16.0.0 || ^17.0.0 || ^18.0.0
+      react: 0.0.0-experimental-96c584661-20240412
     dependencies:
       object-assign: 4.1.1
-      react: 18.2.0
+      react: 0.0.0-experimental-96c584661-20240412
       react-is: 18.2.0
 
-  /react-test-renderer@18.2.0(react@18.2.0):
+  /react-test-renderer@18.2.0(react@0.0.0-experimental-96c584661-20240412):
     resolution: {integrity: sha512-JWD+aQ0lh2gvh4NM3bBM42Kx+XybOxCpgYK7F8ugAlpaTSnWsX+39Z4XkOykGZAHrjwwTZT3x3KxswVWxHPUqA==}
     peerDependencies:
-      react: ^18.2.0
+      react: 0.0.0-experimental-96c584661-20240412
     dependencies:
-      react: 18.2.0
+      react: 0.0.0-experimental-96c584661-20240412
       react-is: 18.2.0
-      react-shallow-renderer: 16.15.0(react@18.2.0)
+      react-shallow-renderer: 16.15.0(react@0.0.0-experimental-96c584661-20240412)
       scheduler: 0.23.0
 
-  /react@18.2.0:
-    resolution: {integrity: sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ==}
+  /react@0.0.0-experimental-96c584661-20240412:
+    resolution: {integrity: sha512-ZsRfyOa6/NyQuznsdXh4j+XSd/emNPuroUIHbbCRENjvfiVclkrN4e8oqmMgzKbV0ggKXpLFb9Z2slxaULlXVg==}
     engines: {node: '>=0.10.0'}
-    dependencies:
-      loose-envify: 1.4.0
 
   /read-cache@1.0.0:
     resolution: {integrity: sha512-Owdv/Ft7IjOgm/i0xvNDZ1LrRANRfew4b2prF3OWMQLxLfu3bS8FVhCsrSCMK4lR56Y9ya+AThoTpDCTxCmpRA==}
@@ -14151,7 +14193,7 @@ packages:
     resolution: {integrity: sha512-0SutC3pNudRKgquxGoRGIz946MZVHqbNfPjBdxeOhBrdgDKlRoXmYLQN9xRbrR09ZXWeGAdPuif7egofn6v5LA==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       define-properties: 1.2.0
       functions-have-names: 1.2.3
     dev: false
@@ -14488,8 +14530,8 @@ packages:
     resolution: {integrity: sha512-9dVEFruWIsnie89yym+xWTAYASdpw3CJV7Li/6zBewGf9z2i1j31rP6jnY0pHEO4QZh6N0K11bFjWmdR8UGdPQ==}
     engines: {node: '>=0.4'}
     dependencies:
-      call-bind: 1.0.2
-      get-intrinsic: 1.2.1
+      call-bind: 1.0.7
+      get-intrinsic: 1.2.4
       has-symbols: 1.0.3
       isarray: 2.0.5
     dev: false
@@ -14513,8 +14555,8 @@ packages:
   /safe-regex-test@1.0.0:
     resolution: {integrity: sha512-JBUUzyOgEwXQY1NuPtvcj/qcBDbDmEvWufhlnXZIm75DEHp+afM1r1ujJpJsV/gSM4t59tpDyPi1sd6ZaPFfsA==}
     dependencies:
-      call-bind: 1.0.2
-      get-intrinsic: 1.2.1
+      call-bind: 1.0.7
+      get-intrinsic: 1.2.4
       is-regex: 1.1.4
     dev: false
 
@@ -14541,6 +14583,9 @@ packages:
     engines: {node: '>=v12.22.7'}
     dependencies:
       xmlchars: 2.2.0
+
+  /scheduler@0.0.0-experimental-96c584661-20240412:
+    resolution: {integrity: sha512-Tt+JgH+BE83baAwuXGEzUeSS8M4OOXYviVxD0MYRpjADk7GGQGfEF2/TQRDbe0ZpJMc/xMsPSnl4YoqYwXJtuw==}
 
   /scheduler@0.21.0:
     resolution: {integrity: sha512-1r87x5fz9MXqswA2ERLo0EbOAU74DpIUO090gIasYTqlVoJeMcl+Z1Rg7WHz+qtPujhS/hGIt9kxZOYBV3faRQ==}
@@ -14992,7 +15037,7 @@ packages:
     resolution: {integrity: sha512-p6TmeT1T3411M8Cgg9wBTMRtY2q9+PNy9EV1i2lIXUN/btt763oIfxwN3RR8VU6wHX8j/1CFy0L+YuThm6bgOg==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       define-properties: 1.2.0
       es-abstract: 1.22.1
     dev: false
@@ -15010,7 +15055,7 @@ packages:
   /string.prototype.trimend@1.0.6:
     resolution: {integrity: sha512-JySq+4mrPf9EsDBEDYMOb/lM7XQLulwg5R/m1r0PXEFqrV0qHvl58sdTilSXtKOflCsK2E8jxf+GKC0T07RWwQ==}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       define-properties: 1.2.0
       es-abstract: 1.22.1
     dev: false
@@ -15026,7 +15071,7 @@ packages:
   /string.prototype.trimstart@1.0.6:
     resolution: {integrity: sha512-omqjMDaY92pbn5HOX7f9IccLA+U1tA9GvtU4JrodiXFfYB7jPzzHpRzpglLAjtUV6bB557zwClJezTqnAiYnQA==}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       define-properties: 1.2.0
       es-abstract: 1.22.1
     dev: false
@@ -15245,7 +15290,7 @@ packages:
     hasBin: true
     dependencies:
       '@jridgewell/source-map': 0.3.2
-      acorn: 8.8.0
+      acorn: 8.11.3
       commander: 2.20.3
       source-map-support: 0.5.21
     dev: false
@@ -15510,8 +15555,8 @@ packages:
     resolution: {integrity: sha512-Y8KTSIglk9OZEr8zywiIHG/kmQ7KWyjseXs1CbSo8vC42w7hg2HgYTxSWwP0+is7bWDc1H+Fo026CpHFwm8tkw==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
-      get-intrinsic: 1.2.1
+      call-bind: 1.0.7
+      get-intrinsic: 1.2.4
       is-typed-array: 1.1.12
     dev: false
 
@@ -15528,9 +15573,9 @@ packages:
     resolution: {integrity: sha512-Or/+kvLxNpeQ9DtSydonMxCx+9ZXOswtwJn17SNLvhptaXYDJvkFFP5zbfU/uLmvnBJlI4yrnXRxpdWH/M5tNA==}
     engines: {node: '>= 0.4'}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       for-each: 0.3.3
-      has-proto: 1.0.1
+      has-proto: 1.0.3
       is-typed-array: 1.1.12
     dev: false
 
@@ -15550,9 +15595,9 @@ packages:
     engines: {node: '>= 0.4'}
     dependencies:
       available-typed-arrays: 1.0.5
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       for-each: 0.3.3
-      has-proto: 1.0.1
+      has-proto: 1.0.3
       is-typed-array: 1.1.12
     dev: false
 
@@ -15571,7 +15616,7 @@ packages:
   /typed-array-length@1.0.4:
     resolution: {integrity: sha512-KjZypGq+I/H7HI5HlOoGHkWUUGq+Q0TPhQurLbyrVrvnKTBgzLhIJ7j6J/XTQOi0d1RjyZ0wdas8bKs2p0x3Ng==}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       for-each: 0.3.3
       is-typed-array: 1.1.12
     dev: false
@@ -15614,7 +15659,7 @@ packages:
   /unbox-primitive@1.0.2:
     resolution: {integrity: sha512-61pPlCD9h51VoreyJ0BReideM3MDKMKnh6+V9L08331ipq6Q8OFXZYiqP6n/tbHx4s5I9uRhcye6BrbkizkBDw==}
     dependencies:
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       has-bigints: 1.0.2
       has-symbols: 1.0.3
       which-boxed-primitive: 1.0.2
@@ -15833,12 +15878,12 @@ packages:
       querystringify: 2.2.0
       requires-port: 1.0.0
 
-  /use-sync-external-store@1.2.0(react@18.2.0):
+  /use-sync-external-store@1.2.0(react@0.0.0-experimental-96c584661-20240412):
     resolution: {integrity: sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==}
     peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react: 0.0.0-experimental-96c584661-20240412
     dependencies:
-      react: 18.2.0
+      react: 0.0.0-experimental-96c584661-20240412
     dev: true
 
   /use@3.1.1:
@@ -16151,7 +16196,7 @@ packages:
     engines: {node: '>= 0.4'}
     dependencies:
       available-typed-arrays: 1.0.5
-      call-bind: 1.0.2
+      call-bind: 1.0.7
       for-each: 0.3.3
       gopd: 1.0.1
       has-tostringtag: 1.0.0

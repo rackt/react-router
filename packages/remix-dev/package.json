@@ -50,6 +50,7 @@
     "set-cookie-parser": "^2.6.0"
   },
   "devDependencies": {
+    "react-server-dom-diy": "0.0.0-experimental-15a3a5622-202404158",
     "@react-router/serve": "workspace:*",
     "@types/babel__core": "^7.20.5",
     "@types/babel__generator": "^7.6.8",
@@ -76,12 +77,16 @@
   },
   "peerDependencies": {
     "react-router-dom": "workspace:^",
+    "react-server-dom-diy": "*",
     "@react-router/serve": "workspace:^",
     "typescript": "^5.1.0",
     "vite": "^5.1.0",
     "wrangler": "^3.28.2"
   },
   "peerDependenciesMeta": {
+    "react-server-dom-diy": {
+      "optional": true
+    },
     "@react-router/serve": {
       "optional": true
     },

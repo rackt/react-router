@@ -32,10 +32,15 @@ import {
 } from "./responses";
 import { createServerHandoffString } from "./serverHandoff";
 import { getDevServerHooks } from "./dev";
-import type { SingleFetchResult, SingleFetchResults } from "./single-fetch";
+import type {
+  CallReactServer,
+  SingleFetchResult,
+  SingleFetchResults,
+} from "./single-fetch";
 import {
   encodeViaTurboStream,
   getResponseStubs,
+  getServerComponentsDataStrategy,
   getSingleFetchDataStrategy,
   getSingleFetchRedirect,
   mergeResponseStubs,
@@ -51,10 +56,11 @@ export type RequestHandler = (
 
 export type CreateRequestHandlerFunction = (
   build: ServerBuild | (() => ServerBuild | Promise<ServerBuild>),
-  mode?: string
+  mode?: string,
+  callReactServer?: CallReactServer
 ) => RequestHandler;
 
-function derive(build: ServerBuild, mode?: string) {
+export function derive(build: ServerBuild, mode?: string) {
   let routes = createRoutes(build.routes);
   let dataRoutes = createStaticHandlerDataRoutes(build.routes, build.future);
   let serverMode = isServerMode(mode) ? mode : ServerMode.Production;
@@ -87,7 +93,8 @@ function derive(build: ServerBuild, mode?: string) {
 
 export const createRequestHandler: CreateRequestHandlerFunction = (
   build,
-  mode
+  mode,
+  callReactServer
 ) => {
   let _build: ServerBuild;
   let routes: ServerRoute[];
@@ -96,6 +103,8 @@ export const createRequestHandler: CreateRequestHandlerFunction = (
   let errorHandler: HandleErrorFunction;
 
   return async function requestHandler(request, loadContext = {}) {
+    // TODO: Throw if callReactServer is not passed and unstable_serverComponents is true
+
     _build = typeof build === "function" ? await build() : build;
     if (typeof build === "function") {
       let derived = derive(_build, mode);
@@ -175,15 +184,36 @@ export const createRequestHandler: CreateRequestHandlerFunction = (
         _build.basename
       );
 
-      response = await handleSingleFetchRequest(
-        serverMode,
-        _build,
-        staticHandler,
-        request,
-        handlerUrl,
-        loadContext,
-        handleError
-      );
+      if (_build.future.unstable_serverComponents) {
+        if (!callReactServer) {
+          throw new Error(
+            "`callReactServer` is required as an export from entry.server for unstable_serverComponents."
+          );
+        }
+        let init: RequestInit & { duplex?: "half" } = {
+          headers: request.headers,
+          method: request.method,
+        };
+        if (
+          request.method !== "GET" &&
+          request.method !== "HEAD" &&
+          request.body
+        ) {
+          init.body = request.body;
+          init.duplex = "half";
+        }
+        return callReactServer(request.url, init);
+      } else {
+        response = await handleSingleFetchRequest(
+          serverMode,
+          _build,
+          staticHandler,
+          request,
+          handlerUrl,
+          loadContext,
+          handleError
+        );
+      }
 
       if (_build.entry.module.handleDataRequest) {
         response = await _build.entry.module.handleDataRequest(response, {
@@ -244,7 +274,8 @@ export const createRequestHandler: CreateRequestHandlerFunction = (
         request,
         loadContext,
         handleError,
-        criticalCss
+        criticalCss,
+        callReactServer
       );
     }
 
@@ -325,6 +356,67 @@ async function handleDataRequest(
   }
 }
 
+// async function handleServerComponentsRequest(
+//   serverMode: ServerMode,
+//   build: ServerBuild,
+//   staticHandler: StaticHandler,
+//   request: Request,
+//   callReactServer: CallReactServer,
+//   loadContext: AppLoadContext,
+//   handleError: (err: unknown) => void
+// ) {
+//   const init: RequestInit & { duplex?: "half" } = {
+//     headers: request.headers,
+//     method: request.method,
+//   };
+//   if (request.method !== "GET" && request.method !== "HEAD") {
+//     init.body = request.body;
+//     init.duplex = "half";
+//   }
+
+//   const serverPromise = await callReactServer(request.url, init);
+
+//   let { result, headers, status } =
+//     request.method !== "GET" && request.method !== "HEAD"
+//       ? await serverComponentsAction(
+//           serverMode,
+//           staticHandler,
+//           request,
+//           serverPromise,
+//           loadContext,
+//           handleError
+//         )
+//       : await serverComponentsLoaders(
+//           serverMode,
+//           staticHandler,
+//           request,
+//           serverPromise,
+//           loadContext,
+//           handleError
+//         );
+
+//   // Mark all successful responses with a header so we can identify in-flight
+//   // network errors that are missing this header
+//   let resultHeaders = new Headers(headers);
+//   resultHeaders.set("X-Remix-Response", "yes");
+//   resultHeaders.set("Content-Type", "text/x-turbo");
+
+//   // Note: Deferred data is already just Promises, so we don't have to mess
+//   // `activeDeferreds` or anything :)
+//   return new Response(
+//     encodeViaTurboStream(
+//       result,
+//       request.signal,
+//       build.entry.module.streamTimeout,
+//       serverMode
+//     ),
+//     {
+//       status: status || 200,
+//       headers: resultHeaders,
+//     }
+//   );
+// }
+
 async function handleSingleFetchRequest(
   serverMode: ServerMode,
   build: ServerBuild,
@@ -335,7 +427,7 @@ async function handleSingleFetchRequest(
   handleError: (err: unknown) => void
 ): Promise<Response> {
   let { result, headers, status } =
-    request.method !== "GET"
+    request.method !== "GET" && request.method !== "HEAD"
       ? await singleFetchAction(
           serverMode,
           staticHandler,
@@ -382,14 +474,45 @@ async function handleDocumentRequest(
   request: Request,
   loadContext: AppLoadContext,
   handleError: (err: unknown) => void,
-  criticalCss?: string
+  criticalCss?: string,
+  callReactServer?: CallReactServer
 ) {
   let context;
   let responseStubs = getResponseStubs();
+  let rscLoaderStream = undefined as
+    | ReadableStream<Uint8Array>
+    | null
+    | undefined;
+  let rscActionId: string | null = null;
+  let rscActionStream = undefined as
+    | ReadableStream<Uint8Array>
+    | null
+    | undefined;
+  // TODO: Move this somewhere in the init path to surface the error
+  // before a request comes into the server?
+  const serverComponents = build.future.unstable_serverComponents;
+  if (serverComponents && !callReactServer) {
+    throw new Error(
+      "callReactServer is required for this server component builds"
+    );
+  }
   try {
     context = await staticHandler.query(request, {
       requestContext: loadContext,
-      unstable_dataStrategy: build.future.unstable_singleFetch
+      unstable_dataStrategy: serverComponents
+        ? getServerComponentsDataStrategy(
+            responseStubs,
+            build.entry.module.createFromReadableStream!,
+            callReactServer!,
+            (resultStream) => {
+              rscLoaderStream = resultStream;
+            },
+            (actionId, resultStream) => {
+              rscActionId = actionId;
+              rscActionStream = resultStream;
+            }
+          )
+        : build.future.unstable_singleFetch
         ? getSingleFetchDataStrategy(responseStubs)
         : undefined,
     });
@@ -398,6 +521,7 @@ async function handleDocumentRequest(
     return new Response(null, { status: 500 });
   }
 
+  console.log(context);
   if (isResponse(context)) {
     return context;
   }
@@ -439,6 +563,36 @@ async function handleDocumentRequest(
     actionData: context.actionData,
     errors: serializeErrors(context.errors, serverMode),
   };
+
+  let streamHandoff: Pick<
+    EntryContext,
+    | "serverHandoffStream"
+    | "serverHandoffActionId"
+    | "serverHandoffStreamAction"
+    | "renderMeta"
+  > | null = null;
+  if (build.future.unstable_serverComponents) {
+    if (!rscLoaderStream) {
+      throw new Error("No RSC stream");
+    }
+    streamHandoff = {
+      serverHandoffStream: rscLoaderStream,
+      serverHandoffActionId: rscActionId ?? undefined,
+      serverHandoffStreamAction: rscActionStream ?? undefined,
+      renderMeta: {},
+    };
+  } else if (build.future.unstable_singleFetch) {
+    streamHandoff = {
+      serverHandoffStream: encodeViaTurboStream(
+        state,
+        request.signal,
+        build.entry.module.streamTimeout,
+        serverMode
+      ),
+      renderMeta: {},
+    };
+  }
+
   let entryContext: EntryContext = {
     manifest: build.assets,
     routeModules: createEntryRouteModules(build.routes),
@@ -450,19 +604,10 @@ async function handleDocumentRequest(
       criticalCss,
       future: build.future,
       isSpaMode: build.isSpaMode,
+      serverHandoffActionId: streamHandoff?.serverHandoffActionId,
       ...(!build.future.unstable_singleFetch ? { state } : null),
     }),
-    ...(build.future.unstable_singleFetch
-      ? {
-          serverHandoffStream: encodeViaTurboStream(
-            state,
-            request.signal,
-            build.entry.module.streamTimeout,
-            serverMode
-          ),
-          renderMeta: {},
-        }
-      : null),
+    ...streamHandoff,
     future: build.future,
     isSpaMode: build.isSpaMode,
     serializeError: (err) => serializeError(err, serverMode),

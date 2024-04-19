@@ -317,6 +317,36 @@ export async function build(
     })
   );
 
+  // Then run Vite React Server builds in parallel
+  if (reactRouterConfig.future.unstable_serverComponents) {
+    process.env.REACT_SERVER = "1";
+    let {} = await getServerBuilds(ctx);
+    await Promise.all(serverBuilds.map(viteBuild));
+
+    let _viteManifestPaths = getViteManifestPaths(ctx, serverBuilds);
+    await Promise.all(
+      viteManifestPaths.map(async ({ srcPath, destPath }) => {
+        let manifestExists = await fse.pathExists(srcPath);
+        if (!manifestExists) return;
+
+        // Move/delete original Vite manifest file
+        if (ctx.viteManifestEnabled) {
+          await fse.ensureDir(path.dirname(destPath));
+          await fse.move(srcPath, destPath);
+        } else {
+          await fse.remove(srcPath);
+        }
+
+        // Remove .vite dir if it's now empty
+        let viteDir = path.dirname(srcPath);
+        let viteDirFiles = await fse.readdir(viteDir);
+        if (viteDirFiles.length === 0) {
+          await fse.remove(viteDir);
+        }
+      })
+    );
+  }
+
   if (ctx.reactRouterConfig.manifest) {
     await fse.ensureDir(
       path.join(ctx.reactRouterConfig.buildDirectory, ".react-router")

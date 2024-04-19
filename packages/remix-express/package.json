@@ -17,7 +17,8 @@
     "tsc": "tsc"
   },
   "dependencies": {
-    "@react-router/node": "workspace:*"
+    "@react-router/node": "workspace:*",
+    "@react-router/server-runtime": "workspace:*"
   },
   "devDependencies": {
     "@types/express": "^4.17.9",

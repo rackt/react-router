@@ -10,6 +10,7 @@
     "strict": true,
     "declaration": true,
     "emitDeclarationOnly": true,
+    "declarationMap": true,
     "rootDir": ".",
     "outDir": "./dist",
 
