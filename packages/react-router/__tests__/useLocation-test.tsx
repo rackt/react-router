@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as TestRenderer from "react-test-renderer";
 import { MemoryRouter, Routes, Route, useLocation } from "react-router";
+import type { Equal, Expect } from "@remix-run/router/__tests__/utils/utils";
 
 function ShowLocation() {
   let location = useLocation();
@@ -83,5 +84,22 @@ describe("useLocation", () => {
         {"pathname":"/example","search":"","hash":"","state":{"my":"state"},"key":"my-key"}
       </pre>
     `);
+  });
+
+  // eslint-disable-next-line jest/expect-expect -- type tests
+  it("returns an object with the correct type", () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used for type tests
+    function TestUseLocationReturnType() {
+      let location = useLocation();
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- type test
+      type Test1 = Expect<Equal<typeof location.hash, "" | `#${string}`>>;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- type test
+      type Test2 = Expect<Equal<typeof location.pathname, "" | `/${string}`>>;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- type test
+      type Test3 = Expect<Equal<typeof location.search, "" | `?${string}`>>;
+
+      return null;
+    }
   });
 });

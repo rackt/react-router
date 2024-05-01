@@ -1,6 +1,6 @@
 import * as React from "react";
-import type { Location, To } from "history";
-import { Action, createPath, parsePath } from "history";
+import type { To } from "history";
+import { Action, createPath, parsePath, Location } from "history";
 
 // Get useHistory from react-router-dom v5 (peer dep).
 // @ts-expect-error
@@ -82,13 +82,13 @@ export function StaticRouter({
   }
 
   let action = Action.Pop;
-  let location: Location = {
-    pathname: locationProp.pathname || "/",
-    search: locationProp.search || "",
-    hash: locationProp.hash || "",
+  let location = {
+    pathname: (locationProp.pathname || "/") as "" | `/${string}`,
+    search: (locationProp.search || "") as "" | `?${string}`,
+    hash: (locationProp.hash || "") as "" | `#${string}`,
     state: locationProp.state || null,
     key: locationProp.key || "default",
-  };
+  } satisfies Location;
 
   let staticNavigator = {
     createHref(to: To) {

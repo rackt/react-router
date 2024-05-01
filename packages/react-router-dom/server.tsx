@@ -58,7 +58,7 @@ export function StaticRouter({
   future,
 }: StaticRouterProps) {
   if (typeof locationProp === "string") {
-    locationProp = parsePath(locationProp);
+    locationProp = parsePath(locationProp) as Partial<Location>;
   }
 
   let action = Action.Pop;

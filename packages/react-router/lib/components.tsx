@@ -441,7 +441,7 @@ export function Router({
   );
 
   if (typeof locationProp === "string") {
-    locationProp = parsePath(locationProp);
+    locationProp = parsePath(locationProp) as Partial<Location>;
   }
 
   let {
@@ -461,7 +461,7 @@ export function Router({
 
     return {
       location: {
-        pathname: trailingPathname,
+        pathname: trailingPathname as Location["pathname"],
         search,
         hash,
         state,

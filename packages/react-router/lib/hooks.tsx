@@ -421,7 +421,7 @@ export function useRoutesImpl(
     location = locationFromContext;
   }
 
-  let pathname = location.pathname || "/";
+  let pathname = (location.pathname || "/") as `/${string}`;
 
   let remainingPathname = pathname;
   if (parentPathnameBase !== "/") {
@@ -441,7 +441,8 @@ export function useRoutesImpl(
     // And the direct substring removal approach won't work :/
     let parentSegments = parentPathnameBase.replace(/^\//, "").split("/");
     let segments = pathname.replace(/^\//, "").split("/");
-    remainingPathname = "/" + segments.slice(parentSegments.length).join("/");
+    remainingPathname = ("/" +
+      segments.slice(parentSegments.length).join("/")) as `/${string}`;
   }
 
   let matches = matchRoutes(routes, { pathname: remainingPathname });
@@ -506,7 +507,7 @@ export function useRoutesImpl(
             state: null,
             key: "default",
             ...location,
-          },
+          } as Location,
           navigationType: NavigationType.Pop,
         }}
       >
@@ -1020,15 +1021,13 @@ export function useBlocker(shouldBlock: boolean | BlockerFunction): Blocker {
       return shouldBlock({
         currentLocation: {
           ...currentLocation,
-          pathname:
-            stripBasename(currentLocation.pathname, basename) ||
-            currentLocation.pathname,
+          pathname: (stripBasename(currentLocation.pathname, basename) ||
+            currentLocation.pathname) as Location["pathname"],
         },
         nextLocation: {
           ...nextLocation,
-          pathname:
-            stripBasename(nextLocation.pathname, basename) ||
-            nextLocation.pathname,
+          pathname: (stripBasename(nextLocation.pathname, basename) ||
+            nextLocation.pathname) as Location["pathname"],
         },
         historyAction,
       });

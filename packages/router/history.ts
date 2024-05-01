@@ -58,6 +58,21 @@ export interface Path {
  */
 export interface Location<State = any> extends Path {
   /**
+   * A URL pathname, beginning with a /.
+   */
+  pathname: "" | `/${string}`;
+
+  /**
+   * A URL search string, beginning with a ?.
+   */
+  search: "" | `?${string}`;
+
+  /**
+   * A URL fragment identifier, beginning with a #.
+   */
+  hash: "" | `#${string}`;
+
+  /**
    * A value of arbitrary data associated with this location.
    */
   state: State;
@@ -536,7 +551,7 @@ export function createLocation(
   state: any = null,
   key?: string
 ): Readonly<Location> {
-  let location: Readonly<Location> = {
+  let location = {
     pathname: typeof current === "string" ? current : current.pathname,
     search: "",
     hash: "",
@@ -547,7 +562,7 @@ export function createLocation(
     // But that's a pretty big refactor to the current test suite so going to
     // keep as is for the time being and just let any incoming keys take precedence
     key: (to && (to as Location).key) || key || createKey(),
-  };
+  } as Readonly<Location>;
   return location;
 }
 

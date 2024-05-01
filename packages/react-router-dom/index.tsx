@@ -1073,16 +1073,20 @@ export const NavLink = React.forwardRef<HTMLAnchorElement, NavLinkProps>(
         : null;
 
     if (!caseSensitive) {
-      locationPathname = locationPathname.toLowerCase();
+      locationPathname = locationPathname.toLowerCase() as Lowercase<
+        typeof locationPathname
+      >;
       nextLocationPathname = nextLocationPathname
-        ? nextLocationPathname.toLowerCase()
+        ? (nextLocationPathname.toLowerCase() as Lowercase<
+            typeof nextLocationPathname
+          >)
         : null;
       toPathname = toPathname.toLowerCase();
     }
 
     if (nextLocationPathname && basename) {
-      nextLocationPathname =
-        stripBasename(nextLocationPathname, basename) || nextLocationPathname;
+      nextLocationPathname = (stripBasename(nextLocationPathname, basename) ||
+        nextLocationPathname) as Location["pathname"];
     }
 
     // If the `to` has a trailing slash, look at that exact spot.  Otherwise,
@@ -1832,9 +1836,8 @@ function useScrollRestoration({
                 // Strip the basename to match useLocation()
                 {
                   ...location,
-                  pathname:
-                    stripBasename(location.pathname, basename) ||
-                    location.pathname,
+                  pathname: (stripBasename(location.pathname, basename) ||
+                    location.pathname) as Location["pathname"],
                 },
                 matches
               )

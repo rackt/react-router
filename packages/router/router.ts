@@ -1311,7 +1311,7 @@ export function createRouter(init: RouterInit): Router {
     nextLocation = {
       ...nextLocation,
       ...init.history.encodeLocation(nextLocation),
-    };
+    } as Location;
 
     let userReplace = opts && opts.replace != null ? opts.replace : undefined;
 
