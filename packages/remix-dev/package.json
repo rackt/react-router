@@ -47,7 +47,8 @@
     "react-refresh": "^0.14.0",
     "react-router": "workspace:*",
     "semver": "^7.3.7",
-    "set-cookie-parser": "^2.6.0"
+    "set-cookie-parser": "^2.6.0",
+    "unplugin-rsc": "0.0.9"
   },
   "devDependencies": {
     "@react-router/serve": "workspace:*",
@@ -69,6 +70,7 @@
     "express": "^4.17.1",
     "esbuild-register": "^3.3.2",
     "fast-glob": "3.2.11",
+    "react-server-dom-diy": "0.0.0-experimental-15a3a5622-202404158",
     "strip-ansi": "^6.0.1",
     "tiny-invariant": "^1.2.0",
     "vite": "^5.1.0",
@@ -77,12 +79,16 @@
   "peerDependencies": {
     "react-router": "workspace:^",
     "@react-router/serve": "workspace:^",
+    "react-server-dom-diy": "*",
     "typescript": "^5.1.0",
     "vite": "^5.1.0",
     "wrangler": "^3.28.2"
   },
   "peerDependenciesMeta": {
     "@react-router/serve": {
+      "optional": true
+    },
+    "react-server-dom-diy": {
       "optional": true
     },
     "typescript": {

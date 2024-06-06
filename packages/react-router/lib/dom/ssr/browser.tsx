@@ -78,17 +78,58 @@ function createHydratedRouter(): RemixRouter {
   // then only get past here and create the `router` one time
   if (!ssrInfo.stateDecodingPromise) {
     let stream = ssrInfo.context.stream;
+    let streamAction = ssrInfo.context.streamAction;
     invariant(stream, "No stream found for single fetch decoding");
     ssrInfo.context.stream = undefined;
-    ssrInfo.stateDecodingPromise = decodeViaTurboStream(stream, window)
-      .then((value) => {
-        ssrInfo!.context.state =
-          value.value as typeof localSsrInfo.context.state;
-        localSsrInfo.stateDecodingPromise!.value = true;
-      })
-      .catch((e) => {
-        localSsrInfo.stateDecodingPromise!.error = e;
-      });
+    if (ssrInfo.context.future.unstable_serverComponents) {
+      ssrInfo.stateDecodingPromise = Promise.all([
+        // @ts-expect-error - TODO: Get this from somewhere else
+        window.createFromReadableStream(stream),
+        streamAction
+          ? // @ts-expect-error - TODO: Get this from somewhere else
+            window.createFromReadableStream(streamAction)
+          : undefined,
+      ])
+        .then(([loaderPayload, actionPayload]) => {
+          let state: NonNullable<typeof ssrInfo>["context"]["state"] = {};
+          for (let routeId of Object.keys(ssrInfo!.routeModules)) {
+            if ("error" in loaderPayload[routeId]) {
+              state.errors = state.errors || {};
+              state.errors[routeId] = loaderPayload[routeId].error;
+            } else if ("data" in loaderPayload[routeId]) {
+              state.loaderData = state.loaderData || {};
+              state.loaderData[routeId] = loaderPayload[routeId].data;
+            }
+          }
+          if (actionPayload) {
+            // @ts-expect-error - TODO: Fix types and don't get it off the window directly
+            const actionId = window.__remixContext.serverHandoffActionId;
+
+            if ("error" in actionPayload) {
+              state.errors = state.errors || {};
+              state.errors[actionId] = actionPayload.error;
+            } else if ("data" in actionPayload) {
+              state.actionData = state.actionData || {};
+              state.actionData[actionId] = actionPayload.data;
+            }
+          }
+          ssrInfo!.context.state = state;
+          localSsrInfo.stateDecodingPromise!.value = true;
+        })
+        .catch((e) => {
+          localSsrInfo.stateDecodingPromise!.error = e;
+        });
+    } else {
+      ssrInfo.stateDecodingPromise = decodeViaTurboStream(stream, window)
+        .then((value) => {
+          ssrInfo!.context.state =
+            value.value as typeof localSsrInfo.context.state;
+          localSsrInfo.stateDecodingPromise!.value = true;
+        })
+        .catch((e) => {
+          localSsrInfo.stateDecodingPromise!.error = e;
+        });
+    }
   }
   if (ssrInfo.stateDecodingPromise.error) {
     throw ssrInfo.stateDecodingPromise.error;

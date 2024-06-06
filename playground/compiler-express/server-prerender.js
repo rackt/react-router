@@ -1,10 +1,12 @@
+import * as dns from "node:dns";
+
 import { createRequestHandler } from "@react-router/express";
 import { installGlobals } from "@react-router/node";
 import compression from "compression";
 import express from "express";
 import morgan from "morgan";
 
-installGlobals();
+dns.setDefaultResultOrder("ipv4first");
 
 const viteDevServer =
   process.env.NODE_ENV === "production"
@@ -15,10 +17,29 @@ const viteDevServer =
         })
       );
 
+const build = viteDevServer
+  ? () => viteDevServer.ssrLoadModule("virtual:react-router/server-build")
+  : await import("./build/server/index.js");
+
+installGlobals({
+  clientViteDevServer: viteDevServer,
+  clientReferences:
+    typeof build !== "function" ? build?.clientReferences : undefined,
+});
+
 const reactRouterHandler = createRequestHandler({
-  build: viteDevServer
-    ? () => viteDevServer.ssrLoadModule("virtual:react-router/server-build")
-    : await import("./build/server/index.js"),
+  build,
+  callServer: async (_url, init) => {
+    const url = new URL(_url);
+    const response = await fetch(
+      "http://localhost:3001" + url.pathname + url.search,
+      init
+    );
+    const cloned = response.clone();
+    const body = await response.text();
+    console.log({ body });
+    return cloned;
+  },
 });
 
 const app = express();

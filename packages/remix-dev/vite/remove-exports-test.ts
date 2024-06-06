@@ -396,4 +396,14 @@ describe("removeExports", () => {
   `);
     expect(result.code).not.toMatch(/server/i);
   });
+
+  test("default function", () => {
+    let result = removeExports(
+      `
+      export default function serverExport(){}
+    `,
+      ["default"]
+    );
+    expect(result.code).toMatchInlineSnapshot(`""`);
+  });
 });

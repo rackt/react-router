@@ -1,0 +1,16 @@
+diff --git a/package.json b/package.json
+index 6e6a40723c9729773c9a376d9baa0d475d6771bc..7c6d7e2ea4e39579f0b68d2f8267f7b7321227f9 100644
+--- a/package.json
++++ b/package.json
+@@ -30,7 +30,10 @@
+       "react-server": "./jsx-runtime.react-server.js",
+       "default": "./jsx-runtime.js"
+     },
+-    "./jsx-dev-runtime": "./jsx-dev-runtime.js"
++    "./jsx-dev-runtime": {
++      "react-server": "./jsx-runtime.react-server.js",
++      "default": "./jsx-dev-runtime.js"
++    }
+   },
+   "repository": {
+     "type": "git",

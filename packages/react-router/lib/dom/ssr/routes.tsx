@@ -148,7 +148,7 @@ export function createServerRoutes(
       // has a loader/clientLoader, but it won't ever be called during the static
       // render, so just give it a no-op function so we can render down to the
       // proper fallback
-      loader: route.hasLoader || route.hasClientLoader ? () => null : undefined,
+      loader: route.hasLoader || route.hasClientLoader ? true : undefined,
       // We don't need action/shouldRevalidate on these routes since they're
       // for a static render
     };

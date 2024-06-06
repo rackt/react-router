@@ -30,6 +30,16 @@ export interface RemixContextObject {
         error?: unknown;
       }
     >;
+    streamCacheAction?: Record<
+      number,
+      Promise<void> & {
+        result?: {
+          done: boolean;
+          value: string;
+        };
+        error?: unknown;
+      }
+    >;
   };
 }
 
@@ -38,11 +48,13 @@ export interface RemixContextObject {
 export interface EntryContext extends RemixContextObject {
   staticHandlerContext: StaticHandlerContext;
   serverHandoffStream?: ReadableStream<Uint8Array>;
+  serverHandoffStreamAction?: ReadableStream<Uint8Array>;
 }
 
 export interface FutureConfig {
   v3_fetcherPersist: boolean;
   v3_relativeSplatPath: boolean;
+  unstable_serverComponents: boolean;
 }
 
 export interface AssetsManifest {

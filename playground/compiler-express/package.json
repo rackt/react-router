@@ -5,8 +5,12 @@
   "type": "module",
   "scripts": {
     "build": "react-router build",
-    "dev": "node ./server.js",
-    "start": "cross-env NODE_ENV=production node ./server.js",
+    "dev": "pnpm dev:react & pnpm dev:prerender",
+    "dev:prerender": "node ./server-prerender.js",
+    "dev:react": "cross-env REACT_SERVER_BUILD=1 node --conditions react-server ./server-react.js",
+    "start:prerender": "cross-env NODE_ENV=production node ./server-prerender.js",
+    "start:react": "cross-env NODE_ENV=production node --conditions react-server ./server-react.js",
+    "start": "pnpm start:react & pnpm start:prerender",
     "typecheck": "tsc"
   },
   "dependencies": {
@@ -16,9 +20,10 @@
     "express": "^4.18.2",
     "isbot": "^4.1.0",
     "morgan": "^1.10.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router": "workspace:*"
+    "react": "0.0.0-experimental-96c584661-20240412",
+    "react-dom": "0.0.0-experimental-96c584661-20240412",
+    "react-router": "workspace:*",
+    "react-server-dom-diy": "0.0.0-experimental-15a3a5622-202404158"
   },
   "devDependencies": {
     "@react-router/dev": "workspace:*",

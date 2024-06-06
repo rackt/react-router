@@ -16,6 +16,8 @@ export type WindowRemixContext = {
   isSpaMode: boolean;
   stream: ReadableStream<Uint8Array> | undefined;
   streamController: ReadableStreamDefaultController<Uint8Array>;
+  streamAction?: ReadableStream<Uint8Array> | undefined;
+  streamControllerAction?: ReadableStreamDefaultController<Uint8Array>;
   // The number of active deferred keys rendered on the server
   a?: number;
   dev?: {

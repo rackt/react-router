@@ -19,6 +19,7 @@ import {
 } from "es-module-lexer";
 import jsesc from "jsesc";
 import colors from "picocolors";
+import { rscClientPlugin, rscServerPlugin } from "unplugin-rsc";
 
 import { type ConfigRoute, type RouteManifest } from "../config/routes";
 import { findConfig } from "../config/findConfig";
@@ -150,6 +151,7 @@ type ReactRouterPluginSsrBuildContext =
 export type ReactRouterPluginContext = ReactRouterPluginSsrBuildContext & {
   rootDirectory: string;
   entryClientFilePath: string;
+  entryReactServerFilePath?: string;
   entryServerFilePath: string;
   publicPath: string;
   reactRouterConfig: ResolvedVitePluginConfig;
@@ -161,6 +163,9 @@ let serverManifestId = VirtualModule.id("server-manifest");
 let browserManifestId = VirtualModule.id("browser-manifest");
 let hmrRuntimeId = VirtualModule.id("hmr-runtime");
 let injectHmrRuntimeId = VirtualModule.id("inject-hmr-runtime");
+let reactServerBuildId = VirtualModule.id("react-server-build");
+let clientReferencesId = VirtualModule.id("client-references");
+let serverReferencesId = VirtualModule.id("server-references");
 
 const resolveRelativeRouteFilePath = (
   route: ConfigRoute,
@@ -173,7 +178,14 @@ const resolveRelativeRouteFilePath = (
   return vite.normalizePath(fullPath);
 };
 
-let vmods = [serverBuildId, serverManifestId, browserManifestId];
+let vmods = [
+  serverBuildId,
+  serverManifestId,
+  browserManifestId,
+  reactServerBuildId,
+  clientReferencesId,
+  serverReferencesId,
+];
 
 const invalidateVirtualModules = (viteDevServer: Vite.ViteDevServer) => {
   vmods.forEach((vmod) => {
@@ -363,6 +375,10 @@ export let getServerBuildDirectory = (ctx: ReactRouterPluginContext) =>
       : [])
   );
 
+let getReactServerBuildDirectory = (
+  reactRouterConfig: ResolvedVitePluginConfig
+) => path.join(reactRouterConfig.buildDirectory, "react-server");
+
 let getClientBuildDirectory = (reactRouterConfig: ResolvedVitePluginConfig) =>
   path.join(reactRouterConfig.buildDirectory, "client");
 
@@ -439,10 +455,11 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
       viteCommand,
     });
 
-    let { entryClientFilePath, entryServerFilePath } = await resolveEntryFiles({
-      rootDirectory,
-      reactRouterConfig,
-    });
+    let { entryClientFilePath, entryReactServerFilePath, entryServerFilePath } =
+      await resolveEntryFiles({
+        rootDirectory,
+        reactRouterConfig,
+      });
 
     let publicPath = resolvePublicPath(viteUserConfig);
     let viteManifestEnabled = viteUserConfig.build?.manifest === true;
@@ -462,6 +479,7 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
       reactRouterConfig,
       rootDirectory,
       entryClientFilePath,
+      entryReactServerFilePath,
       entryServerFilePath,
       publicPath,
       viteManifestEnabled,
@@ -484,7 +502,7 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
       : // Otherwise, all routes are imported as usual
         ctx.reactRouterConfig.routes;
 
-    return `
+    let code = `
     import * as entryServer from ${JSON.stringify(
       resolveFileUrl(ctx, ctx.entryServerFilePath)
     )};
@@ -528,6 +546,89 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
           })
           .join(",\n  ")}
       };`;
+
+    if (ctx.reactRouterConfig.future.unstable_serverComponents) {
+      code += `
+      export { default as clientReferences } from ${JSON.stringify(
+        clientReferencesId
+      )};`;
+    }
+
+    return code;
+  };
+
+  let { clientModules, serverModules } = getReactServerOptions();
+
+  let getReactServerEntry = () => {
+    invariant(
+      viteConfig,
+      "viteconfig required to generate the react-server entry"
+    );
+    invariant(
+      ctx.entryReactServerFilePath,
+      "entryReactServerFilePath required to generate the react-server entry"
+    );
+
+    let routes = ctx.serverBundleBuildConfig
+      ? // For server bundle builds, the server build should only import the
+        // routes for this bundle rather than importing all routes
+        ctx.serverBundleBuildConfig.routes
+      : // Otherwise, all routes are imported as usual
+        ctx.reactRouterConfig.routes;
+
+    return `
+      import * as entryServer from ${JSON.stringify(
+        resolveFileUrl(ctx, ctx.entryReactServerFilePath)
+      )};
+      ${Object.keys(routes)
+        .map((key, index) => {
+          let route = routes[key]!;
+          return `import * as route${index} from ${JSON.stringify(
+            resolveFileUrl(
+              ctx,
+              resolveRelativeRouteFilePath(route, ctx.reactRouterConfig)
+            )
+          )};`;
+        })
+        .join("\n")}
+      export const future = ${JSON.stringify(ctx.reactRouterConfig.future)};
+      export const basename = ${JSON.stringify(ctx.reactRouterConfig.basename)};
+      export const entry = { module: entryServer };
+      export const routes = {
+        ${Object.keys(routes)
+          .map((key, index) => {
+            let route = routes[key]!;
+            return `${JSON.stringify(key)}: {
+        id: ${JSON.stringify(route.id)},
+        parentId: ${JSON.stringify(route.parentId)},
+        path: ${JSON.stringify(route.path)},
+        index: ${JSON.stringify(route.index)},
+        caseSensitive: ${JSON.stringify(route.caseSensitive)},
+        module: route${index}
+      }`;
+          })
+          .join(",\n  ")}
+      };`;
+  };
+
+  let getClientReferencesEntry = () => {
+    let result = "export default {";
+    for (let clientModule of clientModules) {
+      result += `${JSON.stringify(
+        prodHash(clientModule, "use client")
+      )}: () => import(${JSON.stringify(clientModule)}),`;
+    }
+    return `${result}};`;
+  };
+
+  let getServerReferencesEntry = () => {
+    let result = "export default {";
+    for (let serverModule of serverModules) {
+      result += `${JSON.stringify(
+        prodHash(serverModule, "use server")
+      )}: () => import(${JSON.stringify(serverModule)}),`;
+    }
+    return `${result}\};`;
   };
 
   let loadViteManifest = async (directory: string) => {
@@ -854,10 +955,16 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
                                   route.file
                                 )}${BUILD_CLIENT_ROUTE_QUERY_STRING}`
                             ),
+                            ...(ctx.reactRouterConfig.future
+                              .unstable_serverComponents
+                              ? clientModules
+                              : []),
                           ],
                         },
                       }
-                    : {
+                    : !ctx.reactRouterConfig.future.unstable_serverComponents ||
+                      !process.env.REACT_SERVER_BUILD
+                    ? {
                         // We move SSR-only assets to client assets. Note that the
                         // SSR build can also emit code-split JS files (e.g. by
                         // dynamic import) under the same assets directory
@@ -871,6 +978,30 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
                           ...baseRollupOptions,
                           preserveEntrySignatures: "exports-only",
                           input: serverBuildId,
+                          output: {
+                            entryFileNames:
+                              ctx.reactRouterConfig.serverBuildFile,
+                            format: ctx.reactRouterConfig.serverModuleFormat,
+                          },
+                        },
+                      }
+                    : {
+                        // We move SSR-only assets to client assets. Note that the
+                        // SSR build can also emit code-split JS files (e.g. by
+                        // dynamic import) under the same assets directory
+                        // regardless of "ssrEmitAssets" option, so we also need to
+                        // keep these JS files have to be kept as-is.
+                        ssrEmitAssets: true,
+                        copyPublicDir: false, // Assets in the public directory are only used by the client
+                        manifest: true, // We need the manifest to detect SSR-only assets
+                        outDir: getReactServerBuildDirectory(
+                          ctx.reactRouterConfig
+                        ),
+                        rollupOptions: {
+                          ...baseRollupOptions,
+                          preserveEntrySignatures: "exports-only",
+                          // TODO: Add server references (serverModules) to input
+                          input: reactServerBuildId,
                           output: {
                             entryFileNames:
                               ctx.reactRouterConfig.serverBuildFile,
@@ -1113,7 +1244,7 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
         // After the SSR build is finished, we inspect the Vite manifest for
         // the SSR build and move server-only assets to client assets directory
         async handler() {
-          if (!ctx.isSsrBuild) {
+          if (!ctx.isSsrBuild || process.env.REACT_SERVER_BUILD) {
             return;
           }
 
@@ -1243,6 +1374,15 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
 
             return `window.__remixManifest=${reactRouterManifestString};`;
           }
+          case VirtualModule.resolve(reactServerBuildId): {
+            return getReactServerEntry();
+          }
+          case VirtualModule.resolve(clientReferencesId): {
+            return getClientReferencesEntry();
+          }
+          case VirtualModule.resolve(serverReferencesId): {
+            return getServerReferencesEntry();
+          }
         }
       },
     },
@@ -1335,10 +1475,28 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
     {
       name: "react-router-route-exports",
       async transform(code, id, options) {
-        if (options?.ssr) return;
+        if (
+          options?.ssr &&
+          !ctx?.reactRouterConfig.future.unstable_serverComponents
+        ) {
+          return;
+        }
 
         let route = getRoute(ctx.reactRouterConfig, id);
         if (!route) return;
+
+        let [filepath] = id.split("?");
+
+        if (
+          ctx.reactRouterConfig.future.unstable_serverComponents &&
+          process.env.REACT_SERVER_BUILD
+        ) {
+          return removeExports(code, CLIENT_ROUTE_EXPORTS, {
+            sourceMaps: true,
+            filename: id,
+            sourceFileName: filepath,
+          });
+        }
 
         if (!ctx.reactRouterConfig.ssr) {
           let serverOnlyExports = esModuleLexer(code)[1]
@@ -1367,8 +1525,6 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
             }
           }
         }
-
-        let [filepath] = id.split("?");
 
         return removeExports(code, SERVER_ONLY_ROUTE_EXPORTS, {
           sourceMaps: true,
@@ -1509,6 +1665,120 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = (_config) => {
         });
 
         return modules;
+      },
+    },
+    {
+      name: "remix:react-server",
+      config() {
+        const env = process.env.REACT_SERVER_BUILD ? "server" : "client";
+
+        switch (env) {
+          case "client":
+            return {
+              optimizeDeps: {
+                include: [
+                  "react",
+                  "react/jsx-runtime",
+                  "react/jsx-dev-runtime",
+                  "react-server-dom-diy/client",
+                ],
+              },
+            };
+          case "server":
+            return {
+              optimizeDeps: {
+                include: [
+                  "react",
+                  "react/jsx-runtime",
+                  "react/jsx-dev-runtime",
+                  "react-server-dom-diy/server",
+                ],
+              },
+              resolve: {
+                conditions: ["react-server"],
+              },
+              ssr: {
+                noExternal: [
+                  "react",
+                  "react/jsx-runtime",
+                  "react/jsx-dev-runtime",
+                  "react-server-dom-diy/server",
+                ],
+                optimizeDeps: {
+                  include: [
+                    "react",
+                    "react/jsx-runtime",
+                    "react/jsx-dev-runtime",
+                    "react-server-dom-diy/server",
+                  ],
+                },
+                resolve: {
+                  conditions: ["react-server"],
+                  externalConditions: ["react-server"],
+                },
+              },
+            };
+        }
+      },
+      configResolved(resolvedViteConfig) {
+        viteConfig = resolvedViteConfig;
+        invariant(viteConfig);
+      },
+      transform(...args) {
+        invariant(viteConfig);
+        const env = process.env.REACT_SERVER_BUILD ? "server" : "client";
+
+        let hash = viteConfig.mode !== "production" ? devHash : prodHash;
+
+        switch (env) {
+          case "client":
+            return (
+              (
+                rscClientPlugin.vite({
+                  include: ["**/*"],
+                  transformModuleId: hash,
+                  useServerRuntime: {
+                    function: "createServerReference",
+                    module: "@react-router/dev/dist/runtime.client.js",
+                  },
+                  onModuleFound(id, type) {
+                    switch (type) {
+                      case "use server":
+                        serverModules.add(id);
+                        break;
+                    }
+                  },
+                }) as Vite.Plugin
+              ).transform as Function
+            ).call(this, ...args);
+          case "server":
+            return (
+              (
+                rscServerPlugin.vite({
+                  include: ["**/*"],
+                  transformModuleId: hash,
+                  useClientRuntime: {
+                    function: "registerClientReference",
+                    module: "react-server-dom-diy/server",
+                  },
+                  useServerRuntime: {
+                    function: "registerServerReference",
+                    module: "react-server-dom-diy/server",
+                  },
+                  onModuleFound(id, type) {
+                    switch (type) {
+                      case "use client":
+                        clientModules.add(id);
+                        break;
+                      case "use server":
+                        serverModules.add(id);
+                        break;
+                    }
+                  },
+                }) as Vite.Plugin
+              ).transform as Function
+            ).call(this, ...args);
+        }
       },
     },
   ];
@@ -1876,4 +2146,35 @@ function createPrerenderRoutes(
           ...commonRoute,
         };
   });
+}
+
+function prodHash(str: string, _: "use client" | "use server") {
+  return `/${path.relative(process.cwd(), str)}`;
+}
+
+function devHash(str: string, _: "use client" | "use server") {
+  const resolved = path.resolve(str);
+  let unixPath = resolved.replace(/\\/g, "/");
+  if (!unixPath.startsWith("/")) {
+    unixPath = `/${unixPath}`;
+  }
+  if (resolved.startsWith(process.cwd())) {
+    return `/${path.relative(process.cwd(), unixPath)}`;
+  }
+  return `/@fs${unixPath}`;
+}
+
+declare global {
+  var __clientModules: Set<string>;
+  var __serverModules: Set<string>;
+}
+
+global.__clientModules = global.__clientModules || new Set<string>();
+global.__serverModules = global.__serverModules || new Set<string>();
+
+export function getReactServerOptions() {
+  return {
+    clientModules: global.__clientModules,
+    serverModules: global.__serverModules,
+  };
 }

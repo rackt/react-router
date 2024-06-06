@@ -10,6 +10,8 @@ export interface EntryContext {
   criticalCss?: string;
   serverHandoffString?: string;
   serverHandoffStream?: ReadableStream<Uint8Array>;
+  serverHandoffActionId?: string;
+  serverHandoffStreamAction?: ReadableStream<Uint8Array>;
   renderMeta?: {
     didRenderScripts?: boolean;
     streamCache?: Record<
@@ -33,6 +35,7 @@ export interface FutureConfig {
   v3_fetcherPersist: boolean;
   v3_relativeSplatPath: boolean;
   v3_throwAbortReason: boolean;
+  unstable_serverComponents: boolean;
 }
 
 export interface AssetsManifest {

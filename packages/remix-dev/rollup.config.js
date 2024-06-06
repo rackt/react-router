@@ -28,6 +28,8 @@ module.exports = function rollup() {
       },
       input: [
         `${SOURCE_DIR}/index.ts`,
+        // The standalone RSC runtime
+        `${SOURCE_DIR}/runtime.client.ts`,
         // Since we're using a dynamic require for the Vite plugin, we
         // need to tell Rollup it's an entry point
         `${SOURCE_DIR}/vite/plugin.ts`,

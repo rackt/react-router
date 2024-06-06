@@ -207,6 +207,22 @@ export const removeExports = (
         path.remove();
       }
     },
+
+    ExportDefaultDeclaration(path) {
+      if (exportsToRemove.includes("default")) {
+        removedExports.add("default");
+        path.remove();
+        return false;
+      }
+    },
+
+    ExportDefaultSpecifier(path) {
+      if (exportsToRemove.includes("default")) {
+        removedExports.add("default");
+        path.remove();
+        return false;
+      }
+    },
   });
 
   if (removedExports.size === 0) {
@@ -358,5 +374,13 @@ export const removeExports = (
     });
   } while (referencesRemovedInThisPass);
 
-  return generate(document, generateOptions);
+  return {
+    code:
+      generate(document, generateOptions).code +
+      `\n${[...removedExports]
+        .map((exp) =>
+          exp === "default" ? "export default 1;" : `export const ${exp} = 1;`
+        )
+        .join("\n")}`,
+  };
 };

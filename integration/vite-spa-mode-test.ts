@@ -346,7 +346,7 @@ test.describe("SPA Mode", () => {
             import { renderToPipeableStream } from "react-dom/server";
 
             const ABORT_DELAY = 5_000;
-
+            
             export default function handleRequest(
               request: Request,
               responseStatusCode: number,
@@ -361,6 +361,7 @@ test.describe("SPA Mode", () => {
                 remixContext
               );
             }
+            
 
             async function handleBotRequest(
               request: Request,
@@ -381,7 +382,7 @@ test.describe("SPA Mode", () => {
                       shellRendered = true;
                       const body = new PassThrough();
                       const stream = createReadableStreamFromReadable(body);
-
+            
                       responseHeaders.set("Content-Type", "text/html");
 
                       resolve(
@@ -390,7 +391,7 @@ test.describe("SPA Mode", () => {
                           status: responseStatusCode,
                         }).text()
                       );
-
+            
                       pipe(body);
                     },
                     onShellError(error: unknown) {
@@ -422,7 +423,7 @@ test.describe("SPA Mode", () => {
                 headers: responseHeaders,
                 status: responseStatusCode,
               });
-            }
+            }          
           `,
           "app/root.tsx": js`
             import { Outlet, Scripts } from "react-router";

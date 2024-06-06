@@ -41,6 +41,7 @@ interface StreamTransferProps {
   identifier: number;
   reader: ReadableStreamDefaultReader<Uint8Array>;
   textDecoder: TextDecoder;
+  isAction: boolean;
   nonce?: string;
 }
 
@@ -51,6 +52,7 @@ export function StreamTransfer({
   identifier,
   reader,
   textDecoder,
+  isAction,
   nonce,
 }: StreamTransferProps) {
   // If the user didn't render the <Scripts> component then we don't have to
@@ -62,7 +64,19 @@ export function StreamTransfer({
   if (!context.renderMeta.streamCache) {
     context.renderMeta.streamCache = {};
   }
-  let { streamCache } = context.renderMeta;
+  let streamCache = isAction
+    ? context.renderMeta.streamCacheAction
+    : context.renderMeta.streamCache;
+  if (!streamCache) {
+    if (isAction) {
+      context.renderMeta.streamCacheAction = {};
+      streamCache = context.renderMeta.streamCacheAction;
+    } else {
+      context.renderMeta.streamCache = {};
+      streamCache = context.renderMeta.streamCache;
+    }
+  }
+
   let promise = streamCache[identifier];
   if (!promise) {
     promise = streamCache[identifier] = reader
@@ -90,9 +104,9 @@ export function StreamTransfer({
     <script
       nonce={nonce}
       dangerouslySetInnerHTML={{
-        __html: `window.__remixContext.streamController.enqueue(${escapeHtml(
-          JSON.stringify(value)
-        )});`,
+        __html: `window.__remixContext.streamController${
+          isAction ? "Action" : ""
+        }.enqueue(${escapeHtml(JSON.stringify(value))});`,
       }}
     />
   ) : null;
@@ -104,7 +118,9 @@ export function StreamTransfer({
         <script
           nonce={nonce}
           dangerouslySetInnerHTML={{
-            __html: `window.__remixContext.streamController.close();`,
+            __html: `window.__remixContext.streamController${
+              isAction ? "Action" : ""
+            }.close();`,
           }}
         />
       </>
@@ -119,6 +135,7 @@ export function StreamTransfer({
             identifier={identifier + 1}
             reader={reader}
             textDecoder={textDecoder}
+            isAction={isAction}
             nonce={nonce}
           />
         </React.Suspense>
@@ -307,6 +324,14 @@ export function singleFetchUrl(reqUrl: URL | string) {
 async function fetchAndDecode(url: URL, init?: RequestInit) {
   let res = await fetch(url, init);
   invariant(res.body, "No response body to decode");
+
+  if (res.headers.get("Content-Type")?.includes("text/x-component")) {
+    invariant(res.body, "No response body to decode");
+    // @ts-expect-error - TODO: Figure out where this comes from
+    let decoded = await window.createFromReadableStream(res.body);
+    return { status: res.status, data: decoded };
+  }
+
   try {
     let decoded = await decodeViaTurboStream(res.body, window);
     return { status: res.status, data: decoded.value };

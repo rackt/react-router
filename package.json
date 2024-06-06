@@ -2,7 +2,8 @@
   "name": "@remix-run/react-router",
   "private": true,
   "scripts": {
-    "build": "rollup -c",
+    "build": "rollup -c && pnpm build:rsc",
+    "build:rsc": "esbuild --bundle --format=cjs --tree-shaking=true --external:turbo-stream --external:react packages/react-router/rsc.ts --outfile=packages/react-router/dist/rsc.js",
     "clean": "git clean -fdX .",
     "clean:build": "git clean -fdx -e node_modules .",
     "clean:integration": "node ./integration/helpers/cleanup.mjs",
@@ -87,6 +88,7 @@
     "babel-plugin-transform-remove-console": "^6.9.4",
     "chalk": "^4.1.2",
     "cheerio": "^1.0.0-rc.12",
+    "esbuild": "0.21.1",
     "eslint": "^8.57.0",
     "eslint-config-react-app": "^7.0.1",
     "eslint-plugin-flowtype": "^8.0.3",
@@ -140,7 +142,12 @@
   "pnpm": {
     "patchedDependencies": {
       "@changesets/get-dependents-graph@1.3.6": "patches/@changesets__get-dependents-graph@1.3.6.patch",
-      "@changesets/assemble-release-plan@5.2.4": "patches/@changesets__assemble-release-plan@5.2.4.patch"
+      "@changesets/assemble-release-plan@5.2.4": "patches/@changesets__assemble-release-plan@5.2.4.patch",
+      "react@0.0.0-experimental-96c584661-20240412": "patches/react@0.0.0-experimental-96c584661-20240412.patch"
+    },
+    "overrides": {
+      "react": "0.0.0-experimental-96c584661-20240412",
+      "react-dom": "0.0.0-experimental-96c584661-20240412"
     }
   }
 }

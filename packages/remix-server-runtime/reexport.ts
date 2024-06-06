@@ -1,9 +1,13 @@
 export type { ErrorResponse } from "react-router";
 
 export type {
+  CreateFromReadableStreamFunction,
   HandleDataRequestFunction,
   HandleDocumentRequestFunction,
   HandleErrorFunction,
+  ReactServerBuild,
+  ReactServerEntryModule,
+  RenderToReadableStreamFunction,
   ServerBuild,
   ServerEntryModule,
 } from "./build";
@@ -61,3 +65,5 @@ export type {
   SessionStorage,
   FlashSessionData,
 } from "./sessions";
+
+export type { CallReactServer } from "./single-fetch-rsc";

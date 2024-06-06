@@ -48,4 +48,32 @@ export interface ServerEntryModule {
   handleDataRequest?: HandleDataRequestFunction;
   handleError?: HandleErrorFunction;
   streamTimeout?: number;
+  createFromReadableStream?: CreateFromReadableStreamFunction;
+}
+
+export interface RenderToReadableStreamFunction {
+  (data: unknown): ReadableStream<Uint8Array>;
+}
+
+export interface CreateFromReadableStreamFunction {
+  (body: ReadableStream<Uint8Array>): Promise<unknown>;
+}
+
+export interface ReactServerEntryModule {
+  renderToReadableStream: RenderToReadableStreamFunction;
+  decodeAction: (
+    formData: FormData
+  ) => null | ((...args: unknown[]) => Promise<unknown>);
+  decodeFormState: (returnValue: unknown, formData: FormData) => unknown;
+  decodeReply: (formData: FormData) => Promise<unknown[]>;
+}
+
+export interface ReactServerBuild {
+  entry: {
+    module: ReactServerEntryModule;
+  };
+  routes: ServerRouteManifest;
+  future: FutureConfig;
+  basename: string;
+  serverReferences: Record<string, () => Promise<Record<string, unknown>>>;
 }

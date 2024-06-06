@@ -22,6 +22,15 @@
   "unpkg": "./dist/umd/react-router.production.min.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "react-server": "./dist/rsc.js",
+      "module": "./dist/index.js",
+      "default": "./dist/main.js"
+    },
+    "./package.json": "./package.json"
+  },
   "dependencies": {
     "turbo-stream": "^2.0.0"
   },

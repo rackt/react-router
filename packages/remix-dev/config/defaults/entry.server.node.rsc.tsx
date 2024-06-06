@@ -1,46 +1,95 @@
-import { PassThrough } from "node:stream";
+import { PassThrough, Readable } from "node:stream";
 
 import type { AppLoadContext, EntryContext } from "@react-router/node";
 import { createReadableStreamFromReadable } from "@react-router/node";
 import { RemixServer } from "react-router";
-import { isbot } from "isbot";
+import * as isbotModule from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
+// @ts-expect-error - no types
+import ReactServerDOM from "react-server-dom-diy/client";
 
 const ABORT_DELAY = 5_000;
+
+export function createFromReadableStream(body: ReadableStream<Uint8Array>) {
+  return ReactServerDOM.createFromNodeStream(
+    Readable.fromWeb(body as any),
+    global.__diy_client_manifest__
+  );
+}
+
+export async function decodeAction(formData: FormData) {
+  return ReactServerDOM.decodeAction(formData, global.__diy_server_manifest__);
+}
+
+export function decodeFormState(returnValue: unknown, formData: FormData) {
+  return ReactServerDOM.decodeFormState(
+    returnValue,
+    formData,
+    __diy_server_manifest__
+  );
+}
+
+export async function decodeReply(formData: FormData) {
+  return ReactServerDOM.decodeReply(formData, global.__diy_server_manifest__);
+}
 
 export default function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  reactRouterContext: EntryContext,
+  remixContext: EntryContext,
   loadContext: AppLoadContext
 ) {
-  return isbot(request.headers.get("user-agent") || "")
+  let prohibitOutOfOrderStreaming =
+    isBotRequest(request.headers.get("user-agent")) || remixContext.isSpaMode;
+
+  return prohibitOutOfOrderStreaming
     ? handleBotRequest(
         request,
         responseStatusCode,
         responseHeaders,
-        reactRouterContext
+        remixContext
       )
     : handleBrowserRequest(
         request,
         responseStatusCode,
         responseHeaders,
-        reactRouterContext
+        remixContext
       );
+}
+
+// We have some Remix apps in the wild already running with isbot@3 so we need
+// to maintain backwards compatibility even though we want new apps to use
+// isbot@4.  That way, we can ship this as a minor Semver update to @react-router/dev.
+function isBotRequest(userAgent: string | null) {
+  if (!userAgent) {
+    return false;
+  }
+
+  // isbot >= 3.8.0, >4
+  if ("isbot" in isbotModule && typeof isbotModule.isbot === "function") {
+    return isbotModule.isbot(userAgent);
+  }
+
+  // isbot < 3.8.0
+  if ("default" in isbotModule && typeof isbotModule.default === "function") {
+    return isbotModule.default(userAgent);
+  }
+
+  return false;
 }
 
 function handleBotRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  reactRouterContext: EntryContext
+  remixContext: EntryContext
 ) {
   return new Promise((resolve, reject) => {
     let shellRendered = false;
     const { pipe, abort } = renderToPipeableStream(
       <RemixServer
-        context={reactRouterContext}
+        context={remixContext}
         url={request.url}
         abortDelay={ABORT_DELAY}
       />,
@@ -84,13 +133,13 @@ function handleBrowserRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  reactRouterContext: EntryContext
+  remixContext: EntryContext
 ) {
   return new Promise((resolve, reject) => {
     let shellRendered = false;
     const { pipe, abort } = renderToPipeableStream(
       <RemixServer
-        context={reactRouterContext}
+        context={remixContext}
         url={request.url}
         abortDelay={ABORT_DELAY}
       />,

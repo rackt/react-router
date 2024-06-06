@@ -6,5 +6,12 @@ import tsconfigPaths from "vite-tsconfig-paths";
 installGlobals();
 
 export default defineConfig({
-  plugins: [reactRouter(), tsconfigPaths()],
+  plugins: [
+    reactRouter({
+      future: {
+        unstable_serverComponents: true,
+      },
+    }),
+    tsconfigPaths(),
+  ],
 });

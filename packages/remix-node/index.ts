@@ -22,6 +22,7 @@ export {
 } from "./stream";
 
 export {
+  createReactServerRequestHandler,
   createRequestHandler,
   createSession,
   defer,
@@ -40,11 +41,13 @@ export type {
   ActionFunction,
   ActionFunctionArgs,
   AppLoadContext,
+  CallReactServer,
   Cookie,
   CookieOptions,
   CookieParseOptions,
   CookieSerializeOptions,
   CookieSignatureOptions,
+  CreateFromReadableStreamFunction,
   DataFunctionArgs,
   EntryContext,
   ErrorResponse,
@@ -62,6 +65,9 @@ export type {
   MemoryUploadHandlerOptions,
   HandleErrorFunction,
   PageLinkDescriptor,
+  ReactServerBuild,
+  ReactServerEntryModule,
+  RenderToReadableStreamFunction,
   RequestHandler,
   SerializeFrom,
   ServerBuild,
