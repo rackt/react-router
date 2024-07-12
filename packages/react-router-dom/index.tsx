@@ -1761,10 +1761,14 @@ export function useFetcher<TData = any>({
  */
 export function useFetchers(): (Fetcher & { key: string })[] {
   let state = useDataRouterState(DataRouterStateHook.UseFetchers);
-  return Array.from(state.fetchers.entries()).map(([key, fetcher]) => ({
-    ...fetcher,
-    key,
-  }));
+  return React.useMemo(
+    () =>
+      Array.from(state.fetchers.entries()).map(([key, fetcher]) => ({
+        ...fetcher,
+        key,
+      })),
+    [state.fetchers]
+  );
 }
 
 const SCROLL_RESTORATION_STORAGE_KEY = "react-router-scroll-positions";

@@ -5147,6 +5147,61 @@ function testDomRouter(
         expect(html).toContain("fetcher count:1");
       });
 
+      it("useFetchers is stable across across location changes", async () => {
+        let router = createBrowserRouter(
+          [
+            {
+              path: "/",
+              Component() {
+                const [, setSearchParams] = useSearchParams();
+                let [count, setCount] = React.useState(0);
+                let fetcherCount = React.useRef(0);
+                let fetchers = useFetchers();
+                React.useEffect(() => {
+                  fetcherCount.current++;
+                }, [fetchers]);
+                return (
+                  <>
+                    <button
+                      onClick={() => {
+                        setCount(count + 1);
+                        setSearchParams({
+                          random: Math.random().toString(),
+                        });
+                      }}
+                    >
+                      Click
+                    </button>
+                    <p>
+                      {`render count:${count}`}
+                      {`fetchers count:${fetcherCount.current}`}
+                    </p>
+                  </>
+                );
+              },
+            },
+          ],
+          {
+            window: getWindow("/"),
+          }
+        );
+
+        let { container } = render(<RouterProvider router={router} />);
+
+        let html = getHtml(container);
+        expect(html).toContain("render count:0");
+        expect(html).toContain("fetchers count:0");
+
+        fireEvent.click(screen.getByText("Click"));
+        fireEvent.click(screen.getByText("Click"));
+        fireEvent.click(screen.getByText("Click"));
+        await waitFor(() => screen.getByText(/render count:3/));
+
+        html = getHtml(container);
+        expect(html).toContain("render count:3");
+        expect(html).toContain("fetchers count:1");
+      });
+
       describe("useFetcher({ key })", () => {
         it("generates unique keys for fetchers by default", async () => {
           let dfd1 = createDeferred();
