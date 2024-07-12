@@ -1,6 +1,8 @@
+import { waitFor } from "@testing-library/react";
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { act } from "react-dom/test-utils";
+import type { SetURLSearchParams } from "react-router-dom";
 import { MemoryRouter, Routes, Route, useSearchParams } from "react-router-dom";
 
 describe("useSearchParams", () => {
@@ -181,5 +183,106 @@ describe("useSearchParams", () => {
     expect(node.innerHTML).toMatchInlineSnapshot(
       `"<p>value=initial&amp;a=1&amp;b=2</p>"`
     );
+  });
+
+  it("does not modify the setSearchParams reference when the searchParams change", async () => {
+    interface TestParams {
+      incrementParamsUpdateCount: () => number;
+      incrementSetterUpdateCount: () => number;
+    }
+
+    function TestComponent(params: Readonly<TestParams>) {
+      const { incrementParamsUpdateCount, incrementSetterUpdateCount } = params;
+      const queryRef = React.useRef<HTMLInputElement>(null);
+      const [searchParams, setSearchParams] = useSearchParams({ q: "" });
+      const query = searchParams.get("q")!;
+
+      React.useEffect(() => {
+        incrementParamsUpdateCount();
+      }, [searchParams]);
+
+      React.useEffect(() => {
+        incrementSetterUpdateCount();
+      }, [setSearchParams]);
+
+      function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (queryRef.current) {
+          setSearchParams({ q: queryRef.current.value });
+        }
+      }
+
+      return (
+        <div>
+          <p>The current query is "{query}".</p>
+          <form onSubmit={handleSubmit}>
+            <input name="q" defaultValue={query} ref={queryRef} />
+          </form>
+        </div>
+      );
+    }
+
+    function TestApp(params: TestParams) {
+      return (
+        <MemoryRouter initialEntries={["/search?q=Something"]}>
+          <Routes>
+            <Route path="search" element={<TestComponent {...params} />} />
+          </Routes>
+        </MemoryRouter>
+      );
+    }
+
+    const state = {
+      paramsUpdateCount: 0,
+      setterUpdateCount: 0
+    };
+
+    const params: TestParams = {
+      incrementParamsUpdateCount: () => ++state.paramsUpdateCount,
+      incrementSetterUpdateCount: () => ++state.setterUpdateCount
+    };
+
+    // Initial Rendering of the TestApp
+    // The TestComponent should increment both the paramsUpdateCount and setterUpdateCount to 1
+    act(() => {
+      ReactDOM.createRoot(node).render(<TestApp {...params} />);
+    });
+
+    let form = node.querySelector("form")!;
+    let queryInput = node.querySelector<HTMLInputElement>("input[name=q]")!;
+    await waitFor(() => {
+      expect(form).toBeDefined();
+      expect(queryInput).toBeDefined();
+      expect(state.paramsUpdateCount).toEqual(1);
+      expect(state.setterUpdateCount).toEqual(1);
+    });
+
+    // Modify the search params via the form in the TestComponent.
+    // This should trigger a re-render of the component and update the paramsUpdateCount (only)
+    act(() => {
+      queryInput.value = "Something+Else";
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true })
+      );
+    });
+
+    await waitFor(() => {
+      expect(state.paramsUpdateCount).toEqual(2);
+      expect(state.setterUpdateCount).toEqual(1);
+    });
+
+    // Third Times The Charm 
+    // Verifies that the setter is still valid
+    act(() => {
+      queryInput.value = "on+a+boat";
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true })
+      );
+    });
+
+    await waitFor(() => {
+      expect(state.paramsUpdateCount).toEqual(3);
+      expect(state.setterUpdateCount).toEqual(1);
+    });
   });
 });

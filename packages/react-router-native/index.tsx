@@ -298,36 +298,45 @@ function trimScheme(url: string) {
 export function useSearchParams(
   defaultInit?: URLSearchParamsInit
 ): [URLSearchParams, SetURLSearchParams] {
+  let location = useLocation();
   let defaultSearchParamsRef = React.useRef(createSearchParams(defaultInit));
   let hasSetSearchParamsRef = React.useRef(false);
 
-  let location = useLocation();
-  let searchParams = React.useMemo(() => {
-    let searchParams = createSearchParams(location.search);
+  let [searchParams, __setSearchParams] = React.useState<URLSearchParams>(createSearchParams(location.search));
+  let searchParamsRef = React.useRef<URLSearchParams>(searchParams);
 
+  let initializedRef = React.useRef<boolean>(false);
+  React.useEffect(() => {
+    // Prevent re-assigning the search params on initialization
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      return;
+    }
+
+    searchParamsRef.current  = createSearchParams(location.search);
     if (!hasSetSearchParamsRef.current) {
       for (let key of defaultSearchParamsRef.current.keys()) {
-        if (!searchParams.has(key)) {
+        if (!searchParamsRef.current.has(key)) {
           defaultSearchParamsRef.current.getAll(key).forEach((value) => {
-            searchParams.append(key, value);
+            searchParamsRef.current.append(key, value);
           });
         }
       }
     }
 
-    return searchParams;
-  }, [location.search]);
+    __setSearchParams(searchParamsRef.current);
+  }, [location.search, __setSearchParams]);
 
   let navigate = useNavigate();
   let setSearchParams = React.useCallback<SetURLSearchParams>(
     (nextInit, navigateOpts) => {
       const newSearchParams = createSearchParams(
-        typeof nextInit === "function" ? nextInit(searchParams) : nextInit
+        typeof nextInit === "function" ? nextInit(searchParamsRef.current) : nextInit
       );
       hasSetSearchParamsRef.current = true;
       navigate("?" + newSearchParams, navigateOpts);
     },
-    [navigate, searchParams]
+    [navigate]
   );
 
   return [searchParams, setSearchParams];
