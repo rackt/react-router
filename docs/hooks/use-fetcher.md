@@ -32,8 +32,11 @@ function SomeComponent() {
   // call submit or load in a useEffect
   React.useEffect(() => {
     fetcher.submit(data, options);
+  }, [fetcher.submit]); // fetcher.submit is stable, fetcher isn't.
+
+  React.useEffect(() => {
     fetcher.load(href);
-  }, [fetcher]);
+  }, [fetcher.load]);
 
   // build your UI with these properties
   fetcher.state;
@@ -160,7 +163,7 @@ export function useIdleLogout() {
         { method: "post", action: "/logout" }
       );
     }
-  }, [userIsIdle]);
+  }, [userIsIdle, fetcher.submit]);
 }
 ```
 
