@@ -14,14 +14,15 @@ import {
   AbortedDeferredError,
   Action as NavigationType,
   createMemoryHistory,
-  UNSAFE_getResolveToMatches as getResolveToMatches,
-  UNSAFE_invariant as invariant,
   parsePath,
   resolveTo,
   stripBasename,
+  UNSAFE_getResolveToMatches as getResolveToMatches,
+  UNSAFE_invariant as invariant,
   UNSAFE_warning as warning,
 } from "@remix-run/router";
 import * as React from "react";
+import { useEffect, useRef } from "react";
 
 import type {
   DataRouteObject,
@@ -154,6 +155,14 @@ export function RouterProvider({
     [router, navigator, basename]
   );
 
+  const wasRouterPreviouslyInitialized = useRef(false);
+  const isRouterInitialized = router.state.initialized;
+  const routerReinitializing =
+    wasRouterPreviouslyInitialized.current && !isRouterInitialized;
+  useEffect(() => {
+    wasRouterPreviouslyInitialized.current = isRouterInitialized;
+  }, [wasRouterPreviouslyInitialized, isRouterInitialized]);
+
   // The fragment and {null} here are important!  We need them to keep React 18's
   // useId happy when we are server-rendering since we may have a <script> here
   // containing the hydrated server-side staticContext (from StaticRouterProvider).
@@ -173,7 +182,7 @@ export function RouterProvider({
               v7_relativeSplatPath: router.future.v7_relativeSplatPath,
             }}
           >
-            {state.initialized || router.future.v7_partialHydration ? (
+            {(state.initialized && !routerReinitializing) || router.future.v7_partialHydration ? (
               <DataRoutes
                 routes={router.routes}
                 future={router.future}
