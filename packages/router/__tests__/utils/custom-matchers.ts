@@ -45,13 +45,23 @@ export function deferredData(received, done, status = 200, headers = {}) {
       `instead got done=${String(deferredData.done)}/status=${
         deferredData.init!.status || 200
       }/headers=${JSON.stringify(
-        Object.fromEntries(new Headers(deferredData.init!.headers).entries())
+        Object.fromEntries(
+          (deferredData.init!.headers
+            ? new Headers(deferredData.init!.headers)
+            : new Headers()
+          ).entries()
+        )
       )}`,
     pass:
       deferredData.done === done &&
       (deferredData.init!.status || 200) === status &&
       JSON.stringify(
-        Object.fromEntries(new Headers(deferredData.init!.headers).entries())
+        Object.fromEntries(
+          (deferredData.init!.headers
+            ? new Headers(deferredData.init!.headers)
+            : new Headers()
+          ).entries()
+        )
       ) === JSON.stringify(headers),
   };
 }
