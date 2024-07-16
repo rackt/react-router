@@ -279,10 +279,13 @@ export function useDeepLinking() {
       navigate(trimScheme(event.url));
     }
 
-    Linking.addEventListener(URLEventType, handleURLChange);
+    const subscription = Linking.addEventListener(
+      URLEventType,
+      handleURLChange
+    );
 
     return () => {
-      Linking.removeEventListener(URLEventType, handleURLChange);
+      subscription.remove();
     };
   }, [navigate]);
 }
