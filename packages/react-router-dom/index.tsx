@@ -54,6 +54,7 @@ import type {
   RouterState,
   RouterSubscriber,
   BlockerFunction,
+  Path,
 } from "@remix-run/router";
 import {
   createRouter,
@@ -66,6 +67,7 @@ import {
   UNSAFE_warning as warning,
   matchPath,
   IDLE_FETCHER,
+  parsePath,
 } from "@remix-run/router";
 
 import type {
@@ -922,7 +924,7 @@ export interface LinkProps
   preventScrollReset?: boolean;
   relative?: RelativeRoutingType;
   to: To;
-  unstable_viewTransition?: boolean;
+  unstable_viewTransition?: boolean | ((path: Path) => boolean);
 }
 
 const isBrowser =
@@ -1068,7 +1070,9 @@ export const NavLink = React.forwardRef<HTMLAnchorElement, NavLinkProps>(
       // Conditional usage is OK here because the usage of a data router is static
       // eslint-disable-next-line react-hooks/rules-of-hooks
       useViewTransitionState(path) &&
-      unstable_viewTransition === true;
+      typeof unstable_viewTransition === "function"
+        ? unstable_viewTransition(path) === true
+        : unstable_viewTransition === true;
 
     let toPathname = navigator.encodeLocation
       ? navigator.encodeLocation(path).pathname
@@ -1247,7 +1251,7 @@ export interface FormProps extends SharedFormProps {
   /**
    * Enable view transitions on this Form navigation
    */
-  unstable_viewTransition?: boolean;
+  unstable_viewTransition?: boolean | ((path: Path) => boolean);
 }
 
 type HTMLSubmitEvent = React.BaseSyntheticEvent<
@@ -1307,7 +1311,15 @@ export const Form = React.forwardRef<HTMLFormElement, FormProps>(
         state,
         relative,
         preventScrollReset,
-        unstable_viewTransition,
+        unstable_viewTransition:
+          typeof unstable_viewTransition === "function"
+            ? unstable_viewTransition({
+                pathname: "",
+                search: "",
+                hash: "",
+                ...parsePath(formAction),
+              }) === true
+            : unstable_viewTransition === true,
       });
     };
 
@@ -1409,7 +1421,7 @@ export function useLinkClickHandler<E extends Element = HTMLAnchorElement>(
     state?: any;
     preventScrollReset?: boolean;
     relative?: RelativeRoutingType;
-    unstable_viewTransition?: boolean;
+    unstable_viewTransition?: LinkProps["unstable_viewTransition"];
   } = {}
 ): (event: React.MouseEvent<E, MouseEvent>) => void {
   let navigate = useNavigate();
@@ -1433,7 +1445,10 @@ export function useLinkClickHandler<E extends Element = HTMLAnchorElement>(
           state,
           preventScrollReset,
           relative,
-          unstable_viewTransition,
+          unstable_viewTransition:
+            typeof unstable_viewTransition === "function"
+              ? unstable_viewTransition(path)
+              : unstable_viewTransition === true,
         });
       }
     },

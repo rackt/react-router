@@ -7384,7 +7384,7 @@ function testDomRouter(
     });
 
     describe("view transitions", () => {
-      it("applies view transitions to navigations when opted in", async () => {
+      it("applies view transitions to navigations when opted in via boolean prop", async () => {
         let testWindow = getWindow("/");
         let spy = jest.fn((cb) => {
           cb();
@@ -7412,6 +7412,110 @@ function testDomRouter(
                       <button type="submit">/c</button>
                     </Form>
                     <Form action="/d" unstable_viewTransition>
+                      <button type="submit">/d</button>
+                    </Form>
+                    <Outlet />
+                  </div>
+                );
+              },
+              children: [
+                {
+                  index: true,
+                  Component: () => <h1>Home</h1>,
+                },
+                {
+                  path: "a",
+                  Component: () => <h1>A</h1>,
+                },
+                {
+                  path: "b",
+                  Component: () => <h1>B</h1>,
+                },
+                {
+                  path: "c",
+                  action: () => null,
+                  Component: () => <h1>C</h1>,
+                },
+                {
+                  path: "d",
+                  action: () => null,
+                  Component: () => <h1>D</h1>,
+                },
+              ],
+            },
+          ],
+          { window: testWindow }
+        );
+        render(<RouterProvider router={router} />);
+
+        expect(screen.getByText("Home")).toBeDefined();
+        fireEvent.click(screen.getByText("/a"));
+        await waitFor(() => screen.getByText("A"));
+        expect(spy).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByText("/b"));
+        await waitFor(() => screen.getByText("B"));
+        expect(spy).toHaveBeenCalledTimes(1);
+
+        fireEvent.click(screen.getByText("/c"));
+        await waitFor(() => screen.getByText("C"));
+        expect(spy).toHaveBeenCalledTimes(1);
+
+        fireEvent.click(screen.getByText("/d"));
+        await waitFor(() => screen.getByText("D"));
+        expect(spy).toHaveBeenCalledTimes(2);
+      });
+
+      it("applies view transitions to navigations when opted in via function callback", async () => {
+        let testWindow = getWindow("/");
+        let spy = jest.fn((cb) => {
+          cb();
+          return {
+            ready: Promise.resolve(),
+            finished: Promise.resolve(),
+            updateCallbackDone: Promise.resolve(),
+            skipTransition: () => {},
+          };
+        });
+        testWindow.document.startViewTransition = spy;
+
+        let router = createTestRouter(
+          [
+            {
+              path: "/",
+              Component() {
+                return (
+                  <div>
+                    <Link
+                      to="/a"
+                      unstable_viewTransition={({ pathname }) =>
+                        pathname === "/b"
+                      }
+                    >
+                      /a
+                    </Link>
+                    <Link
+                      to="/b"
+                      unstable_viewTransition={({ pathname }) =>
+                        pathname === "/b"
+                      }
+                    >
+                      /b
+                    </Link>
+                    <Form
+                      action="/c"
+                      unstable_viewTransition={({ pathname }) =>
+                        pathname === "/d"
+                      }
+                    >
+                      <button type="submit">/c</button>
+                    </Form>
+                    <Form
+                      action="/d"
+                      unstable_viewTransition={({ pathname }) =>
+                        pathname === "/d"
+                      }
+                    >
                       <button type="submit">/d</button>
                     </Form>
                     <Outlet />
