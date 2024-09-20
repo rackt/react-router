@@ -1669,6 +1669,8 @@ export type FetcherWithComponents<TData> = Fetcher<TData> & {
   >;
   submit: FetcherSubmitFunction;
   load: (href: string, opts?: { flushSync?: boolean }) => void;
+  reset: () => void;
+  abort: (reason?: unknown) => void;
 };
 
 // TODO: (v7) Change the useFetcher generic default from `any` to `unknown`
@@ -1705,6 +1707,9 @@ export function useFetcher<TData = any>({
     setFetcherKey(getUniqueFetcherId());
   }
 
+  let fetcher = state.fetchers.get(fetcherKey) || IDLE_FETCHER;
+  let data = fetcherData.get(fetcherKey);
+
   // Registration/cleanup
   React.useEffect(() => {
     router.getFetcher(fetcherKey);
@@ -1737,6 +1742,16 @@ export function useFetcher<TData = any>({
     [fetcherKey, submitImpl]
   );
 
+  let reset = React.useCallback<FetcherWithComponents<TData>["reset"]>(
+    () => router.resetFetcher(fetcherKey),
+    [router, fetcherKey]
+  );
+
+  let abort = React.useCallback<FetcherWithComponents<TData>["abort"]>(
+    (reason) => router.abortFetcher(fetcherKey, data, reason),
+    [router, fetcherKey, data]
+  );
+
   let FetcherForm = React.useMemo(() => {
     let FetcherForm = React.forwardRef<HTMLFormElement, FetcherFormProps>(
       (props, ref) => {
@@ -1752,17 +1767,17 @@ export function useFetcher<TData = any>({
   }, [fetcherKey]);
 
   // Exposed FetcherWithComponents
-  let fetcher = state.fetchers.get(fetcherKey) || IDLE_FETCHER;
-  let data = fetcherData.get(fetcherKey);
-  let fetcherWithComponents = React.useMemo(
+  let fetcherWithComponents = React.useMemo<FetcherWithComponents<TData>>(
     () => ({
       Form: FetcherForm,
       submit,
       load,
+      reset,
+      abort,
       ...fetcher,
       data,
     }),
-    [FetcherForm, submit, load, fetcher, data]
+    [FetcherForm, submit, load, reset, abort, fetcher, data]
   );
 
   return fetcherWithComponents;

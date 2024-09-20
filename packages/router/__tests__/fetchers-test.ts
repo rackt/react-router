@@ -3333,4 +3333,249 @@ describe("fetchers", () => {
       expect((await request.formData()).get("a")).toBe("1");
     });
   });
+
+  describe("resetFetcher", () => {
+    it("resets fetcher data", async () => {
+      let t = setup({
+        routes: [
+          { id: "root", path: "/" },
+          { id: "fetch", path: "/fetch", loader: true },
+        ],
+      });
+
+      let A = await t.fetch("/fetch", "a", "root");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "loading",
+        data: undefined,
+      });
+
+      await A.loaders.fetch.resolve("FETCH");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: "FETCH",
+      });
+
+      t.router.resetFetcher("a");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: null,
+      });
+    });
+  });
+
+  describe("abortFetcher", () => {
+    it("allows mid-flight fetcher aborts", async () => {
+      let t = setup({
+        routes: [
+          { id: "root", path: "/" },
+          { id: "fetch", path: "/fetch", loader: true },
+        ],
+      });
+
+      let A = await t.fetch("/fetch", "a", "root");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "loading",
+        data: undefined,
+      });
+
+      t.router.abortFetcher("a", null);
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: null,
+      });
+
+      // no-op
+      await A.loaders.fetch.resolve("FETCH");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: null,
+      });
+    });
+
+    it("can preserve data when aborting a fetcher", async () => {
+      let t = setup({
+        routes: [
+          { id: "root", path: "/" },
+          { id: "fetch", path: "/fetch", loader: true },
+        ],
+      });
+
+      let A = await t.fetch("/fetch", "a", "root");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "loading",
+        data: undefined,
+      });
+
+      await A.loaders.fetch.resolve("FETCH");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: "FETCH",
+      });
+
+      let B = await t.fetch("/fetch", "a", "root");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "loading",
+        data: "FETCH",
+      });
+
+      t.router.abortFetcher("a", t.router.state.fetchers.get("a")?.data);
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: "FETCH",
+      });
+
+      // no-op
+      await B.loaders.fetch.resolve("FETCH*");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: "FETCH",
+      });
+    });
+
+    it("allows aborting during subsequent streaming of data", async () => {
+      let t = setup({
+        routes: [
+          { id: "root", path: "/" },
+          { id: "fetch", path: "/fetch", loader: true },
+        ],
+      });
+
+      let A = await t.fetch("/fetch", "a", "root");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "loading",
+        data: undefined,
+      });
+
+      let dfd = createDeferred();
+      A.loaders.fetch.signal.addEventListener("abort", () =>
+        dfd.reject(A.loaders.fetch.signal.reason)
+      );
+      await A.loaders.fetch.resolve({
+        critical: "FETCH",
+        lazy: dfd.promise,
+      });
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: {
+          critical: "FETCH",
+          lazy: expect.any(Promise),
+        },
+      });
+
+      await t.router.abortFetcher("a", t.router.state.fetchers.get("a")?.data);
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: {
+          critical: "FETCH",
+          lazy: expect.any(Promise),
+        },
+      });
+      expect(t.router.state.errors).toBeNull();
+      await expect(
+        t.router.state.fetchers.get("a")?.data.lazy
+      ).rejects.toMatchInlineSnapshot(
+        `[AbortError: The operation was aborted.]`
+      );
+    });
+
+    it("supports aborting with an Abortsignal `reason`", async () => {
+      let t = setup({
+        routes: [
+          { id: "root", path: "/" },
+          { id: "fetch", path: "/fetch", loader: true },
+        ],
+      });
+
+      let A = await t.fetch("/fetch", "a", "root");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "loading",
+        data: undefined,
+      });
+
+      let dfd = createDeferred();
+      A.loaders.fetch.signal.addEventListener("abort", () =>
+        dfd.reject(A.loaders.fetch.signal.reason)
+      );
+      await A.loaders.fetch.resolve({
+        critical: "FETCH",
+        lazy: dfd.promise,
+      });
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: {
+          critical: "FETCH",
+          lazy: expect.any(Promise),
+        },
+      });
+
+      await t.router.abortFetcher(
+        "a",
+        t.router.state.fetchers.get("a")?.data,
+        new Error("💥")
+      );
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: {
+          critical: "FETCH",
+          lazy: expect.any(Promise),
+        },
+      });
+      expect(t.router.state.errors).toBeNull();
+      await expect(
+        t.router.state.fetchers.get("a")?.data.lazy
+      ).rejects.toMatchInlineSnapshot(`[Error: 💥]`);
+    });
+
+    it("cleans up internal controllers on fetcher unmount", async () => {
+      let t = setup({
+        routes: [
+          { id: "root", path: "/" },
+          { id: "fetch", path: "/fetch", loader: true },
+        ],
+      });
+
+      let A = await t.fetch("/fetch", "a", "root");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "loading",
+        data: undefined,
+      });
+
+      let signalAborted = false;
+      A.loaders.fetch.signal.addEventListener("abort", () => {
+        signalAborted = true;
+      });
+
+      let dfd = createDeferred();
+      await A.loaders.fetch.resolve({
+        critical: "FETCH",
+        lazy: dfd.promise,
+      });
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: {
+          critical: "FETCH",
+          lazy: expect.any(Promise),
+        },
+      });
+
+      await dfd.resolve("LAZY");
+      expect(t.router.state.fetchers.get("a")).toMatchObject({
+        state: "idle",
+        data: {
+          critical: "FETCH",
+          lazy: expect.any(Promise),
+        },
+      });
+      await expect(t.router.state.fetchers.get("a")?.data.lazy).resolves.toBe(
+        "LAZY"
+      );
+
+      // Unmount fetcher
+      t.router.deleteFetcher("a");
+
+      await t.router.abortFetcher("a", t.router.state.fetchers.get("a")?.data);
+      expect(t.router.state.errors).toBeNull();
+      expect(signalAborted).toBe(false);
+    });
+  });
 });
