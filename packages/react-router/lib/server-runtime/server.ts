@@ -55,7 +55,7 @@ function derive(build: ServerBuild, mode?: string) {
   let errorHandler =
     build.entry.module.handleError ||
     ((error, { request }) => {
-      if (serverMode !== ServerMode.Test && !request.signal.aborted) {
+      if (serverMode !== ServerMode.Test && !request.signal?.aborted) {
         console.error(
           // @ts-expect-error This is "private" from users but intended for internal use
           isRouteErrorResponse(error) && error.error ? error.error : error
