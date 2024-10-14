@@ -80,6 +80,7 @@ async function loader({ params }) {
 
   return defer({
     packageLocation: packageLocationPromise,
+    id: params.packageId,
   });
 }
 
@@ -90,6 +91,7 @@ export default function PackageRoute() {
     <main>
       <h1>Let's locate your package</h1>
       <React.Suspense
+        key={data.id}
         fallback={<p>Loading package location...</p>}
       >
         <Await
@@ -124,6 +126,7 @@ export default function PackageRoute() {
     <main>
       <h1>Let's locate your package</h1>
       <React.Suspense
+        key={data.id}
         fallback={<p>Loading package location...</p>}
       >
         <Await
@@ -199,7 +202,7 @@ It's all trade-offs, and what's neat about the API design is that it's well suit
 
 ### When does the `<Suspense/>` fallback render?
 
-The `<Await />` component will only throw the promise up the `<Suspense>` boundary on the initial render of the `<Await />` component with an unsettled promise. It will not re-render the fallback if props change. Effectively, this means that you _will not_ get a fallback rendered when a user submits a form and loader data is revalidated. You _will_ get a fallback rendered when the user navigates to the same route with different params (in the context of our above example, if the user selects from a list of packages on the left to find their location on the right).
+The `<Await />` component will only throw the promise up the `<Suspense>` boundary on the initial render of the `<Await />` component with an unsettled promise. It will not re-render the fallback if props change. Effectively, this means that you _will not_ get a fallback rendered when a user submits a form and loader data is revalidated. You _will_ get a fallback rendered when the user navigates to the same route with different params (in the context of our above example, if the user selects from a list of packages on the left to find their location on the right). If the fallback is not being rendered when the props change, ensure you have a `key` on the `<Suspense>` boundary to force it to recognize that the props have changed.
 
 This may feel counter-intuitive at first, but stay with us, we really thought this through and it's important that it works this way. Let's imagine a world without the deferred API. For those scenarios you're probably going to want to implement Optimistic UI for form submissions/revalidation.
 

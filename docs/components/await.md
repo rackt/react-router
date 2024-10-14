@@ -16,7 +16,7 @@ function Book() {
     <div>
       <h1>{book.title}</h1>
       <p>{book.description}</p>
-      <React.Suspense fallback={<ReviewsSkeleton />}>
+      <React.Suspense key={book.id} fallback={<ReviewsSkeleton />}>
         <Await
           resolve={reviews}
           errorElement={
@@ -33,6 +33,8 @@ function Book() {
 ```
 
 **Note:** `<Await>` expects to be rendered inside of a `<React.Suspense>` or `<React.SuspenseList>` parent to enable the fallback UI.
+
+**Note:** Add a data-bound `key` to the parent of `<Await>` to ensure if the route changes, the fallback is invoked while new data is loaded.
 
 ## Type declaration
 
@@ -133,7 +135,7 @@ function Book() {
     <div>
       <h1>{book.title}</h1>
       <p>{book.description}</p>
-      <React.Suspense fallback={<ReviewsSkeleton />}>
+      <React.Suspense key={book.id} fallback={<ReviewsSkeleton />}>
         <Await
           // and is the promise we pass to Await
           resolve={reviews}
