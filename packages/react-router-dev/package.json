@@ -26,7 +26,8 @@
       "types": "./dist/vite/cloudflare.d.ts",
       "default": "./dist/vite/cloudflare.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./api-docs.json": "./dist/api-docs.json"
   },
   "bin": {
     "react-router": "bin.js"

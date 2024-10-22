@@ -4,6 +4,7 @@
     "import/first": "off",
     "@typescript-eslint/consistent-type-imports": "error"
   },
+  "ignorePatterns": ["public/**/*"],
   "overrides": [
     {
       "files": ["**/__tests__/**"],

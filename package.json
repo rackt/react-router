@@ -2,7 +2,7 @@
   "name": "@remix-run/react-router",
   "private": true,
   "scripts": {
-    "build": "rollup -c",
+    "build": "rollup -c && typedoc",
     "clean": "git clean -fdX .",
     "clean:build": "git clean -fdx -e node_modules .",
     "clean:integration": "node ./integration/helpers/cleanup.mjs",

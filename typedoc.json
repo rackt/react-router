@@ -3,6 +3,6 @@
   "entryPoints": ["packages/*"],
   "entryPointStrategy": "packages",
   "includeVersion": false,
-  "json": "./public/api.json",
+  "json": "./packages/react-router-dev/dist/api-docs.json",
   "out": "./public"
 }
