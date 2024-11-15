@@ -244,6 +244,38 @@ describe("a router", () => {
       });
     });
 
+    it("supports a basename prop for route matching and make sure it has a leading /", async () => {
+      let history = createMemoryHistory({
+        initialEntries: ["/base/name/path"],
+      });
+      let router = createRouter({
+        basename: "base/name",
+        routes: [{ path: "path" }],
+        history,
+      });
+      expect(router.state).toMatchObject({
+        location: {
+          hash: "",
+          key: expect.any(String),
+          pathname: "/base/name/path",
+          search: "",
+          state: null,
+        },
+        matches: [
+          {
+            params: {},
+            pathname: "/path",
+            pathnameBase: "/path",
+            route: {
+              id: "0",
+              path: "path",
+            },
+          },
+        ],
+        initialized: true,
+      });
+    });
+
     it("supports subscribers", async () => {
       let history = createMemoryHistory({ initialEntries: ["/"] });
       let count = 0;
