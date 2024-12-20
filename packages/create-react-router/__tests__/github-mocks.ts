@@ -1,6 +1,6 @@
 import fsp from "node:fs/promises";
 import * as path from "node:path";
-import { rest } from "msw";
+import { http } from "msw";
 import type { setupServer } from "msw/node";
 import invariant from "tiny-invariant";
 
@@ -47,10 +47,8 @@ type GHContent = {
   encoding: "base64";
 };
 
-type ResponseResolver = Parameters<typeof rest.get>[1];
-
-let sendTarball: ResponseResolver = async (req, res, ctx) => {
-  let { owner, repo } = req.params;
+let sendTarball = async (args: { owner: string; repo: string }) => {
+  let { owner, repo } = args;
   invariant(typeof owner === "string", "owner must be a string");
   invariant(typeof repo === "string", "repo must be a string");
 
@@ -65,139 +63,131 @@ let sendTarball: ResponseResolver = async (req, res, ctx) => {
 
   let fileBuffer = await fsp.readFile(pathToTarball);
 
-  return res(
-    ctx.body(fileBuffer),
-    ctx.set("Content-Type", "application/x-gzip")
-  );
+  return new Response(fileBuffer, {
+    headers: {
+      "Content-Type": "application/x-gzip",
+    },
+  });
 };
 
 let githubHandlers: Array<RequestHandler> = [
-  rest.head(
+  http.head(
     `https://github.com/remix-run/react-router/tree/main/:type/:name`,
-    async (_req, res, ctx) => {
-      return res(ctx.status(200));
+    () => {
+      return new Response();
     }
   ),
-  rest.head(
+  http.head(
     `https://github.com/remix-run/examples/tree/main/:type/:name`,
-    async (_req, res, ctx) => {
-      return res(ctx.status(200));
+    () => {
+      return new Response();
     }
   ),
-  rest.head(
+  http.head<{ status: string }>(
     `https://github.com/error-username/:status`,
-    async (req, res, ctx) => {
-      return res(ctx.status(Number(req.params.status)));
+    ({ params }) => {
+      return new Response(null, { status: Number(params.status) });
     }
   ),
-  rest.head(`https://github.com/:owner/:repo`, async (req, res, ctx) => {
-    return res(ctx.status(200));
+  http.head(`https://github.com/:owner/:repo`, () => {
+    return new Response();
   }),
-  rest.head(
+  http.head<{ status: string }>(
     `https://api.github.com/repos/error-username/:status`,
-    async (req, res, ctx) => {
-      return res(ctx.status(Number(req.params.status)));
+    ({ params }) => {
+      return new Response(null, { status: Number(params.status) });
     }
   ),
-  rest.head(
+  http.head(
     `https://api.github.com/repos/private-org/private-repo`,
-    async (req, res, ctx) => {
+    ({ request }) => {
       let status =
-        req.headers.get("Authorization") === "token valid-token" ? 200 : 404;
-      return res(ctx.status(status));
+        request.headers.get("Authorization") === "token valid-token"
+          ? 200
+          : 404;
+      return new Response(null, { status });
     }
   ),
-  rest.head(
-    `https://api.github.com/repos/:owner/:repo`,
-    async (req, res, ctx) => {
-      return res(ctx.status(200));
-    }
-  ),
-  rest.head(
-    `https://github.com/:owner/:repo/tree/:branch/:path*`,
-    async (req, res, ctx) => {
-      return res(ctx.status(200));
-    }
-  ),
-  rest.get(
+  http.head(`https://api.github.com/repos/:owner/:repo`, () => {
+    return new Response();
+  }),
+  http.head(`https://github.com/:owner/:repo/tree/:branch/:path*`, () => {
+    return new Response();
+  }),
+  http.get<{ owner: string; repo: string }>(
     `https://api.github.com/repos/:owner/:repo/git/trees/:branch`,
-    async (req, res, ctx) => {
-      let { owner, repo } = req.params;
+    async ({ params }) => {
+      let { owner, repo } = params;
 
-      return res(
-        ctx.status(200),
-        ctx.json({
-          sha: "7d906ff5bbb79401a4a8ec1e1799845ed502c0a1",
-          url: `https://api.github.com/repos/${owner}/${repo}/trees/7d906ff5bbb79401a4a8ec1e1799845ed502c0a1`,
-          tree: [
-            {
-              path: "package.json",
-              mode: "040000",
-              type: "blob",
-              sha: "a405cd8355516db9c96e1467fb14b74c97ac0a65",
-              size: 138,
-              url: `https://api.github.com/repos/${owner}/${repo}/git/blobs/a405cd8355516db9c96e1467fb14b74c97ac0a65`,
-            },
-            {
-              path: "template",
-              mode: "040000",
-              type: "tree",
-              sha: "3f350a670e8fefd58535a9e1878539dc19afb4b5",
-              url: `https://api.github.com/repos/${owner}/${repo}/trees/3f350a670e8fefd58535a9e1878539dc19afb4b5`,
-            },
-          ],
-        })
-      );
+      return Response.json({
+        sha: "7d906ff5bbb79401a4a8ec1e1799845ed502c0a1",
+        url: `https://api.github.com/repos/${owner}/${repo}/trees/7d906ff5bbb79401a4a8ec1e1799845ed502c0a1`,
+        tree: [
+          {
+            path: "package.json",
+            mode: "040000",
+            type: "blob",
+            sha: "a405cd8355516db9c96e1467fb14b74c97ac0a65",
+            size: 138,
+            url: `https://api.github.com/repos/${owner}/${repo}/git/blobs/a405cd8355516db9c96e1467fb14b74c97ac0a65`,
+          },
+          {
+            path: "template",
+            mode: "040000",
+            type: "tree",
+            sha: "3f350a670e8fefd58535a9e1878539dc19afb4b5",
+            url: `https://api.github.com/repos/${owner}/${repo}/trees/3f350a670e8fefd58535a9e1878539dc19afb4b5`,
+          },
+        ],
+      });
     }
   ),
-  rest.get(
+  http.get<{ owner: string; repo: string; path: string }>(
     `https://api.github.com/repos/:owner/:repo/contents/:path`,
-    async (req, res, ctx) => {
-      let { owner, repo } = req.params;
-      if (typeof req.params.path !== "string") {
-        throw new Error("req.params.path must be a string");
+    async ({ request, params }) => {
+      let { owner, repo } = params;
+      if (typeof params.path !== "string") {
+        throw new Error("params.path must be a string");
       }
-      let path = decodeURIComponent(req.params.path).trim();
+      let contentsPath = decodeURIComponent(params.path).trim();
       let isMockable = owner === "remix-run" && repo === "react-router";
 
       if (!isMockable) {
-        let message = `Attempting to get content description for unmockable resource: ${owner}/${repo}/${path}`;
+        let message = `Attempting to get content description for unmockable resource: ${owner}/${repo}/${contentsPath}`;
         console.error(message);
         throw new Error(message);
       }
 
-      let localPath = path.join(__dirname, "../../..", path);
+      let localPath = path.join(__dirname, "../../..", contentsPath);
       let isLocalDir = await isDirectory(localPath);
       let isLocalFile = await isFile(localPath);
 
       if (!isLocalDir && !isLocalFile) {
-        return res(
-          ctx.status(404),
-          ctx.json({
+        return Response.json(
+          {
             message: "Not Found",
             documentation_url:
               "https://docs.github.com/rest/reference/repos#get-repository-content",
-          })
+          },
+          { status: 404 }
         );
       }
 
       if (isLocalFile) {
         let encoding = "base64" as const;
         let content = await fsp.readFile(localPath, { encoding: "utf-8" });
-        return res(
-          ctx.status(200),
-          ctx.json({
-            content: Buffer.from(content, "utf-8").toString(encoding),
-            encoding,
-          })
-        );
+        return Response.json({
+          content: Buffer.from(content, "utf-8").toString(encoding),
+          encoding,
+        });
       }
 
       let dirList = await fsp.readdir(localPath);
+      let url = new URL(request.url);
 
       let contentDescriptions = await Promise.all(
         dirList.map(async (name): Promise<GHContentsDescription> => {
-          let relativePath = path.join(path, name);
+          let relativePath = path.join(contentsPath, name);
           // NOTE: this is a cheat-code so we don't have to determine the sha of the file
           // and our sha endpoint handler doesn't have to do a reverse-lookup.
           let sha = relativePath;
@@ -209,31 +199,31 @@ let githubHandlers: Array<RequestHandler> = [
             path: relativePath,
             sha,
             size,
-            url: `https://api.github.com/repos/${owner}/${repo}/contents/${path}?${req.url.searchParams}`,
-            html_url: `https://github.com/${owner}/${repo}/tree/main/${path}`,
+            url: `https://api.github.com/repos/${owner}/${repo}/contents/${contentsPath}?${url.searchParams}`,
+            html_url: `https://github.com/${owner}/${repo}/tree/main/${contentsPath}`,
             git_url: `https://api.github.com/repos/${owner}/${repo}/git/trees/${sha}`,
             download_url: null,
             type: isDir ? "dir" : "file",
             _links: {
-              self: `https://api.github.com/repos/${owner}/${repo}/contents/${path}${req.url.searchParams}`,
+              self: `https://api.github.com/repos/${owner}/${repo}/contents/${contentsPath}${url.searchParams}`,
               git: `https://api.github.com/repos/${owner}/${repo}/git/trees/${sha}`,
-              html: `https://github.com/${owner}/${repo}/tree/main/${path}`,
+              html: `https://github.com/${owner}/${repo}/tree/main/${contentsPath}`,
             },
           };
         })
       );
 
-      return res(ctx.json(contentDescriptions));
+      return Response.json(contentDescriptions);
     }
   ),
-  rest.get(
+  http.get<{ owner: string; repo: string; sha: string }>(
     `https://api.github.com/repos/:owner/:repo/git/blobs/:sha`,
-    async (req, res, ctx) => {
-      let { owner, repo } = req.params;
-      if (typeof req.params.sha !== "string") {
-        throw new Error("req.params.sha must be a string");
+    async ({ params }) => {
+      let { owner, repo } = params;
+      if (typeof params.sha !== "string") {
+        throw new Error("params.sha must be a string");
       }
-      let sha = decodeURIComponent(req.params.sha).trim();
+      let sha = decodeURIComponent(params.sha).trim();
       // if the sha includes a "/" that means it's not a sha but a relativePath
       // and therefore the client is getting content it got from the local
       // mock environment, not the actual github API.
@@ -259,17 +249,17 @@ let githubHandlers: Array<RequestHandler> = [
         encoding,
       };
 
-      return res(ctx.json(resource));
+      return Response.json(resource);
     }
   ),
-  rest.get(
-    `https://api.github.com/repos/:owner/:repo/contents/:path*`,
-    async (req, res, ctx) => {
-      let { owner, repo } = req.params;
+  http.get<{ owner: string; repo: string; path?: string[] }>(
+    `https://api.github.com/repos/:owner/:repo/contents{/*path}`,
+    async ({ params }) => {
+      let { owner, repo } = params;
 
-      let relativePath = req.params.path;
+      let relativePath = params.path;
       if (typeof relativePath !== "string") {
-        throw new Error("req.params.path must be a string");
+        throw new Error("params.path must be a string");
       }
       let fullPath = path.join(__dirname, "..", relativePath);
       let encoding = "base64" as const;
@@ -279,83 +269,80 @@ let githubHandlers: Array<RequestHandler> = [
 
       let resource: GHContent = {
         sha,
-        node_id: `${req.params.path}_node_id`,
+        node_id: `${params.path}_node_id`,
         size,
         url: `https://api.github.com/repos/${owner}/${repo}/git/blobs/${sha}`,
         content: Buffer.from(content, "utf-8").toString(encoding),
         encoding,
       };
 
-      return res(ctx.json(resource));
+      return Response.json(resource);
     }
   ),
-  rest.get(
+  http.get<{ branch: string }>(
     `https://codeload.github.com/private-org/private-repo/tar.gz/:branch`,
-    (req, res, ctx) => {
-      if (req.headers.get("Authorization") !== "token valid-token") {
-        return res(ctx.status(404));
+    ({ request }) => {
+      if (request.headers.get("Authorization") !== "token valid-token") {
+        return new Response(null, { status: 404 });
       }
-      req.params.owner = "private-org";
-      req.params.repo = "private-repo";
-      return sendTarball(req, res, ctx);
+      return sendTarball({ owner: "private-org", repo: "private-repo" });
     }
   ),
-  rest.get(
+  http.get<{ owner: string; repo: string; branch: string }>(
     `https://codeload.github.com/:owner/:repo/tar.gz/:branch`,
-    sendTarball
+    ({ params }) => {
+      return sendTarball({ owner: params.owner, repo: params.repo });
+    }
   ),
-  rest.get(
+  http.get(
     `https://api.github.com/repos/private-org/private-repo/tarball`,
-    (req, res, ctx) => {
-      if (req.headers.get("Authorization") !== "token valid-token") {
-        return res(ctx.status(404));
+    ({ request }) => {
+      if (request.headers.get("Authorization") !== "token valid-token") {
+        return new Response(null, { status: 404 });
       }
-      req.params.owner = "private-org";
-      req.params.repo = "private-repo";
-
-      return sendTarball(req, res, ctx);
+      return sendTarball({ owner: "private-org", repo: "private-repo" });
     }
   ),
-  rest.get(
+  http.get<{ tag: string }>(
     `https://api.github.com/repos/private-org/private-repo/releases/tags/:tag`,
-    (req, res, ctx) => {
-      if (req.headers.get("Authorization") !== "token valid-token") {
-        return res(ctx.status(404));
+    ({ request, params }) => {
+      if (request.headers.get("Authorization") !== "token valid-token") {
+        return new Response(null, { status: 404 });
       }
-      let { tag } = req.params;
-      return res(
-        ctx.status(200),
-        ctx.json({
-          assets: [
-            {
-              browser_download_url: `https://github.com/private-org/private-repo/releases/download/${tag}/template.tar.gz`,
-              id: "working-asset-id",
-            },
-          ],
-        })
-      );
+      let { tag } = params;
+      return Response.json({
+        assets: [
+          {
+            browser_download_url: `https://github.com/private-org/private-repo/releases/download/${tag}/template.tar.gz`,
+            id: "working-asset-id",
+          },
+        ],
+      });
     }
   ),
-  rest.get(
+  http.get(
     `https://api.github.com/repos/private-org/private-repo/releases/assets/working-asset-id`,
-    (req, res, ctx) => {
-      if (req.headers.get("Authorization") !== "token valid-token") {
-        return res(ctx.status(404));
+    ({ request }) => {
+      if (request.headers.get("Authorization") !== "token valid-token") {
+        return new Response(null, { status: 404 });
       }
-      req.params.owner = "private-org";
-      req.params.repo = "private-repo";
-      return sendTarball(req, res, ctx);
+      return sendTarball({ owner: "private-org", repo: "private-repo" });
     }
   ),
-  rest.get(
+  http.get<{ status: string }>(
     `https://api.github.com/repos/error-username/:status/tarball`,
-    async (req, res, ctx) => {
-      return res(ctx.status(Number(req.params.status)));
+    ({ params }) => {
+      return new Response(null, { status: Number(params.status) });
     }
   ),
-  rest.get(`https://api.github.com/repos/:owner/:repo/tarball`, sendTarball),
-  rest.get(`https://api.github.com/repos/:repo*`, async (req, res, ctx) => {
-    return res(ctx.json({ default_branch: "main" }));
+  http.get<{ owner: string; repo: string }>(
+    `https://api.github.com/repos/:owner/:repo/tarball`,
+    ({ params }) => {
+      return sendTarball({ owner: params.owner, repo: params.repo });
+    }
+  ),
+  http.get(`https://api.github.com/repos/:repo*`, () => {
+    return Response.json({ default_branch: "main" });
   }),
 ];
 
