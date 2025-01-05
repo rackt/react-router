@@ -1,5 +1,6 @@
 import * as React from "react";
 import type {
+  AgnosticRouteMatch,
   Blocker,
   BlockerFunction,
   Location,
@@ -445,7 +446,12 @@ export function useRoutesImpl(
     remainingPathname = "/" + segments.slice(parentSegments.length).join("/");
   }
 
-  let matches = matchRoutes(routes, { pathname: remainingPathname });
+  let matches =
+    dataRouterState &&
+    dataRouterState.matches &&
+    dataRouterState.matches.length > 0
+      ? (dataRouterState.matches as AgnosticRouteMatch<string, RouteObject>[])
+      : matchRoutes(routes, { pathname: remainingPathname });
 
   if (__DEV__) {
     warning(

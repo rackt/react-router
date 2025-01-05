@@ -829,6 +829,7 @@ export function createRouter(init: RouterInit): Router {
   let initialScrollRestored = init.hydrationData != null;
 
   let initialMatches = matchRoutes(dataRoutes, init.history.location, basename);
+  let initialMatchesIsFOW = false;
   let initialErrors: RouteData | null = null;
 
   if (initialMatches == null && !patchRoutesOnNavigationImpl) {
@@ -874,6 +875,7 @@ export function createRouter(init: RouterInit): Router {
         init.history.location.pathname
       );
       if (fogOfWar.active && fogOfWar.matches) {
+        initialMatchesIsFOW = true;
         initialMatches = fogOfWar.matches;
       }
     }
@@ -1522,7 +1524,14 @@ export function createRouter(init: RouterInit): Router {
 
     let routesToUse = inFlightDataRoutes || dataRoutes;
     let loadingNavigation = opts && opts.overrideNavigation;
-    let matches = matchRoutes(routesToUse, location, basename);
+    let matches =
+      opts?.initialHydration &&
+      state.matches &&
+      state.matches.length > 0 &&
+      !initialMatchesIsFOW
+        ? // `matchRoutes()` has already been called if we're in here via `router.initialize()`
+          state.matches
+        : matchRoutes(routesToUse, location, basename);
     let flushSync = (opts && opts.flushSync) === true;
 
     let fogOfWar = checkFogOfWar(matches, routesToUse, location.pathname);
