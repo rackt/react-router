@@ -527,6 +527,10 @@ function getHistoryState(location: Location, index: number): HistoryState {
   };
 }
 
+function normalizeMultipleSlashes(path: string) {
+  return path.replace(/\/{2,}/g, "/");
+}
+
 /**
  * Creates a Location object with a unique key from the given Path
  */
@@ -536,11 +540,17 @@ export function createLocation(
   state: any = null,
   key?: string
 ): Readonly<Location> {
+  let toLocation = typeof to === "string" ? parsePath(to) : to;
+  if (toLocation.pathname) {
+    toLocation.pathname = normalizeMultipleSlashes(toLocation.pathname);
+  }
   let location: Readonly<Location> = {
-    pathname: typeof current === "string" ? current : current.pathname,
+    pathname: normalizeMultipleSlashes(
+      typeof current === "string" ? current : current.pathname
+    ),
     search: "",
     hash: "",
-    ...(typeof to === "string" ? parsePath(to) : to),
+    ...toLocation,
     state,
     // TODO: This could be cleaned up.  push/replace should probably just take
     // full Locations now and avoid the need to run through this flow at all
@@ -586,7 +596,7 @@ export function parsePath(path: string): Partial<Path> {
     }
 
     if (path) {
-      parsedPath.pathname = path;
+      parsedPath.pathname = normalizeMultipleSlashes(path);
     }
   }
 
