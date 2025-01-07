@@ -2103,6 +2103,81 @@ describe("Lazy Route Discovery (Fog of War)", () => {
       expect(router.state.matches.map((m) => m.route.id)).toEqual(["a", "b"]);
     });
 
+    it("handles errors thrown from patchRoutesOnNavigation() when there are no partial matches (GET navigation)", async () => {
+      router = createRouter({
+        history: createMemoryHistory(),
+        routes: [
+          {
+            id: "a",
+            path: "a",
+          },
+        ],
+        async patchRoutesOnNavigation({ patch }) {
+          await tick();
+          throw new Error("broke!");
+          patch("b", [
+            {
+              id: "b",
+              path: "b",
+              loader() {
+                return "B";
+              },
+            },
+          ]);
+        },
+      });
+
+      await router.navigate("/b");
+      expect(router.state).toMatchObject({
+        matches: [],
+        location: { pathname: "/b" },
+        actionData: null,
+        loaderData: {},
+        errors: {
+          a: new Error("broke!"),
+        },
+      });
+    });
+
+    it("handles errors thrown from patchRoutesOnNavigation() when there are no partial matches (POST navigation)", async () => {
+      router = createRouter({
+        history: createMemoryHistory(),
+        routes: [
+          {
+            id: "a",
+            path: "a",
+          },
+        ],
+        async patchRoutesOnNavigation({ patch }) {
+          await tick();
+          throw new Error("broke!");
+          patch("b", [
+            {
+              id: "b",
+              path: "b",
+              action() {
+                return "B";
+              },
+            },
+          ]);
+        },
+      });
+
+      await router.navigate("/b", {
+        formMethod: "POST",
+        formData: createFormData({}),
+      });
+      expect(router.state).toMatchObject({
+        matches: [],
+        location: { pathname: "/b" },
+        actionData: null,
+        loaderData: {},
+        errors: {
+          a: new Error("broke!"),
+        },
+      });
+    });
+
     it("bubbles errors thrown from patchRoutesOnNavigation() during hydration", async () => {
       router = createRouter({
         history: createMemoryHistory({
