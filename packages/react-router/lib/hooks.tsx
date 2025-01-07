@@ -491,6 +491,7 @@ export function useRoutesImpl(
   }
 
   let locationFromContext = useLocation();
+  let navigationTypeFromContext = useNavigationType();
 
   let location;
   if (locationArg) {
@@ -585,7 +586,10 @@ export function useRoutesImpl(
   // When a user passes in a `locationArg`, the associated routes need to
   // be wrapped in a new `LocationContext.Provider` in order for `useLocation`
   // to use the scoped location instead of the global location.
-  if (locationArg && renderedMatches) {
+  if (renderedMatches) {
+    const navigationType = locationArg
+      ? NavigationType.Pop
+      : navigationTypeFromContext;
     return (
       <LocationContext.Provider
         value={{
@@ -597,7 +601,7 @@ export function useRoutesImpl(
             key: "default",
             ...location,
           },
-          navigationType: NavigationType.Pop,
+          navigationType,
         }}
       >
         {renderedMatches}
