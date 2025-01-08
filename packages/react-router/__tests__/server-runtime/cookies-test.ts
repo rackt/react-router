@@ -2,6 +2,7 @@
  * @jest-environment node
  */
 
+import { parse } from "cookie";
 import { createCookie, isCookie } from "../../lib/server-runtime/cookies";
 
 function getCookieFromSetCookie(setCookie: string): string {
@@ -91,6 +92,49 @@ describe("cookies", () => {
     `);
   });
 
+  it("parses/serializes encrypted object values", async () => {
+    let encryptedCookie = createCookie("my-cookie", {
+      secrets: ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+      encrypt: true,
+    });
+    let setCookie = await encryptedCookie.serialize({ hello: "mjackson" });
+    let value = await encryptedCookie.parse(getCookieFromSetCookie(setCookie));
+
+    expect(value).toMatchInlineSnapshot(`
+      {
+        "hello": "mjackson",
+      }
+    `);
+  });
+
+  it("serializes with encryption to prevent exposure of cookie data", async () => {
+    // signed cookies allow cookie contents to be easily exfiltrated
+    const exfiltrateCookieData = (cookie: string) => {
+      let parsedCookie = parse(cookie);
+      let signedCookieValue = parsedCookie["my-cookie"];
+      let cookieValue = signedCookieValue?.split(".")[0];
+      let decodedCookieValue = atob(cookieValue || "");
+
+      return decodedCookieValue;
+    };
+
+    let cookie = createCookie("my-cookie", {
+      secrets: ["secret1"],
+    });
+    let setCookie = await cookie.serialize({ hello: "mjackson" });
+
+    expect(exfiltrateCookieData(setCookie)).toContain("mjackson");
+
+    let encryptedCookie = createCookie("my-cookie", {
+      // Must be 32 bytes (256 bits) long
+      secrets: ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+      encrypt: true,
+    });
+    let setCookie2 = await encryptedCookie.serialize({ hello: "mjackson" });
+
+    expect(exfiltrateCookieData(setCookie2)).not.toContain("mjackson");
+  });
+
   it("fails to parse signed object values with invalid signature", async () => {
     let cookie = createCookie("my-cookie", {
       secrets: ["secret1"],
@@ -102,6 +146,37 @@ describe("cookies", () => {
     let value = await cookie2.parse(getCookieFromSetCookie(setCookie));
 
     expect(value).toBeNull();
+  });
+
+  it("fails to parse encrypted object values with incorrect key", async () => {
+    let cookie = createCookie("my-cookie", {
+      secrets: ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+      encrypt: true,
+    });
+    let setCookie = await cookie.serialize({ hello: "mjackson" });
+    let cookie2 = createCookie("my-cookie", {
+      secrets: ["bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],
+      encrypt: true,
+    });
+    let value = await cookie2.parse(getCookieFromSetCookie(setCookie));
+
+    expect(value).toBeNull();
+
+    let cookie3 = createCookie("my-cookie", {
+      secrets: ["secret1"],
+    });
+    let value2 = await cookie3.parse(getCookieFromSetCookie(setCookie));
+
+    expect(value2).toBeNull();
+  });
+
+  it("fails to create encrypted cookies without a secret", async () => {
+    expect(() =>
+      // @ts-expect-error missing secrets
+      createCookie("my-cookie", {
+        encrypt: true,
+      })
+    ).toThrow();
   });
 
   it("supports secret rotation", async () => {
@@ -120,6 +195,38 @@ describe("cookies", () => {
     // A new secret enters the rotation...
     cookie = createCookie("my-cookie", {
       secrets: ["secret2", "secret1"],
+    });
+
+    // cookie should still be able to parse old cookies.
+    let oldValue = await cookie.parse(getCookieFromSetCookie(setCookie));
+    expect(oldValue).toMatchObject(value);
+
+    // New Set-Cookie should be different, it uses a differet secret.
+    let setCookie2 = await cookie.serialize(value);
+    expect(setCookie).not.toEqual(setCookie2);
+  });
+
+  it("supports encryption key rotation", async () => {
+    let cookie = createCookie("my-cookie", {
+      secrets: ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+      encrypt: true,
+    });
+    let setCookie = await cookie.serialize({ hello: "mjackson" });
+    let value = await cookie.parse(getCookieFromSetCookie(setCookie));
+
+    expect(value).toMatchInlineSnapshot(`
+      {
+        "hello": "mjackson",
+      }
+    `);
+
+    // A new secret enters the rotation...
+    cookie = createCookie("my-cookie", {
+      secrets: [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      ],
+      encrypt: true,
     });
 
     // cookie should still be able to parse old cookies.

@@ -1,7 +1,7 @@
 import type { ParseOptions, SerializeOptions } from "cookie";
 import { parse, serialize } from "cookie";
 
-import { sign, unsign } from "./crypto";
+import { decrypt, encrypt, sign, unsign } from "./crypto";
 import { warnOnce } from "./warnings";
 
 export type {
@@ -19,11 +19,25 @@ export interface CookieSignatureOptions {
    * cookies that were signed with older secrets still work.
    */
   secrets?: string[];
+
+  /**
+   * Enables encryption of the cookie contents using "AES-GCM".
+   *
+   * Encryption keys should be provided in the `secrets` array and are able to be rotated in the same way as with signing. When using encryption, unlike signing, secrets must be 32 bytes long.
+   */
+  encrypt?: false;
+}
+
+interface CookieEncryptionOptions {
+  secrets: Required<CookieSignatureOptions>["secrets"];
+
+  // TODO: Add description
+  encrypt: true;
 }
 
 export type CookieOptions = ParseOptions &
   SerializeOptions &
-  CookieSignatureOptions;
+  (CookieSignatureOptions | CookieEncryptionOptions);
 
 /**
  * A HTTP cookie.
@@ -74,11 +88,21 @@ export const createCookie = (
   name: string,
   cookieOptions: CookieOptions = {}
 ): Cookie => {
-  let { secrets = [], ...options } = {
+  let {
+    secrets = [],
+    encrypt,
+    ...options
+  } = {
     path: "/",
     sameSite: "lax" as const,
     ...cookieOptions,
   };
+
+  if (encrypt && secrets?.length === 0) {
+    throw new Error(
+      `Cannot encrypt cookie "${name}" without providing a secret.`
+    );
+  }
 
   warnOnceAboutExpiresCookie(name, options.expires);
 
@@ -101,7 +125,7 @@ export const createCookie = (
       if (name in cookies) {
         let value = cookies[name];
         if (typeof value === "string" && value !== "") {
-          let decoded = await decodeCookieValue(value, secrets);
+          let decoded = await decodeCookieValue(value, secrets, encrypt);
           return decoded;
         } else {
           return "";
@@ -113,7 +137,7 @@ export const createCookie = (
     async serialize(value, serializeOptions) {
       return serialize(
         name,
-        value === "" ? "" : await encodeCookieValue(value, secrets),
+        value === "" ? "" : await encodeCookieValue(value, secrets, encrypt),
         {
           ...options,
           ...serializeOptions,
@@ -142,12 +166,17 @@ export const isCookie: IsCookieFunction = (object): object is Cookie => {
 
 async function encodeCookieValue(
   value: any,
-  secrets: string[]
+  secrets: string[],
+  encryptValue?: boolean
 ): Promise<string> {
   let encoded = encodeData(value);
 
   if (secrets.length > 0) {
-    encoded = await sign(encoded, secrets[0]);
+    if (encryptValue) {
+      encoded = await encrypt(encoded, secrets[0]);
+    } else {
+      encoded = await sign(encoded, secrets[0]);
+    }
   }
 
   return encoded;
@@ -155,11 +184,17 @@ async function encodeCookieValue(
 
 async function decodeCookieValue(
   value: string,
-  secrets: string[]
+  secrets: string[],
+  encryptValue?: boolean
 ): Promise<any> {
   if (secrets.length > 0) {
     for (let secret of secrets) {
-      let unsignedValue = await unsign(value, secret);
+      let unsignedValue;
+      if (encryptValue) {
+        unsignedValue = await decrypt(value, secret);
+      } else {
+        unsignedValue = await unsign(value, secret);
+      }
       if (unsignedValue !== false) {
         return decodeData(unsignedValue);
       }
