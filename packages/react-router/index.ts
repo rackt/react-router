@@ -43,6 +43,7 @@ export type {
   RedirectFunction,
   ShouldRevalidateFunction,
   ShouldRevalidateFunctionArgs,
+  LayoutComponentProps,
   UIMatch,
 } from "./lib/router/utils";
 
