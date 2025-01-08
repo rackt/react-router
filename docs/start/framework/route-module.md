@@ -23,6 +23,8 @@ Route modules are the foundation of React Router's framework features, they defi
 
 This guide is a quick overview of every route module feature. The rest of the getting started guides will cover these features in more detail.
 
+For additional details, please refer to the API documentation for a [Route Module][route-module]
+
 ## Component (`default`)
 
 Defines the component that will render when the route matches.
@@ -39,6 +41,10 @@ export default function MyRouteComponent() {
   );
 }
 ```
+
+See also:
+
+- [`default` export Component props][component-props]
 
 ## `loader`
 
@@ -130,6 +136,10 @@ export async function action({ request }) {
 }
 ```
 
+See also:
+
+- [`action` params][action-params]
+
 ## `clientAction`
 
 Like route actions but only called in the browser.
@@ -157,9 +167,7 @@ import {
   useRouteError,
 } from "react-router";
 
-export function ErrorBoundary() {
-  const error = useRouteError();
-
+export function ErrorBoundary({ error }) {
   if (isRouteErrorResponse(error)) {
     return (
       <div>
@@ -184,6 +192,12 @@ export function ErrorBoundary() {
 }
 ```
 
+See also:
+
+- [`ErrorBoundary` props][errorboundary-props]
+- [`isRouteErorResponse` docs][is-route-error-response]
+- [React Error Boundaries docs][error-boundaries]
+
 ## `HydrateFallback`
 
 On initial page load, the route component renders only after the client loader is finished. If exported, a `HydrateFallback` can render immediately in place of the route component.
@@ -203,9 +217,13 @@ export default function Component({ loaderData }) {
 }
 ```
 
+See also:
+
+- [`HydrateFallback` props][hydratefallback-props]
+
 ## `headers`
 
-Route headers define HTTP headers to be sent with the response when server rendering.
+Route headers define HTTP [headers] to be sent with the response when server rendering.
 
 ```tsx
 export function headers() {
@@ -216,6 +234,11 @@ export function headers() {
 }
 ```
 
+See also:
+
+- [`headers` params][headers-params]
+- [`Cache-Control` header][cache-control-header]
+
 ## `handle`
 
 Route handle allows apps to add anything to a route match in `useMatches` to create abstractions (like breadcrumbs, etc.).
@@ -225,6 +248,11 @@ export const handle = {
   its: "all yours",
 };
 ```
+
+See also:
+
+- [`handle` docs][handle]
+- [`useMatches` docs][use-matches]
 
 ## `links`
 
@@ -269,9 +297,13 @@ export default function Root() {
 }
 ```
 
+See also:
+
+- [`links` params][links-params]
+
 ## `meta`
 
-Route meta defines meta tags to be rendered in the `<head>` of the document.
+Route meta defines [`<meta>`][meta-element] tags to be rendered in the `<head>` of the document.
 
 ```tsx
 export function meta() {
@@ -307,7 +339,7 @@ export default function Root() {
 }
 ```
 
-**See also**
+See also:
 
 - [`meta` params][meta-params]
 
@@ -325,22 +357,31 @@ export function shouldRevalidate(
 }
 ```
 
+See also:
+
+- [`shouldRevalidate` params][shouldrevalidate-params]
+
 ---
 
 Next: [Rendering Strategies](./rendering)
 
-[fetch]: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
-[loader-params]: https://api.reactrouter.com/v7/interfaces/react_router.LoaderFunctionArgs
-[client-loader-params]: https://api.reactrouter.com/v7/types/react_router.ClientLoaderFunctionArgs
-[action-params]: https://api.reactrouter.com/v7/interfaces/react_router.ActionFunctionArgs
-[client-action-params]: https://api.reactrouter.com/v7/types/react_router.ClientActionFunctionArgs
 [error-boundaries]: https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary
-[use-route-error]: https://api.reactrouter.com/v7/functions/react_router.useRouteError
 [is-route-error-response]: https://api.reactrouter.com/v7/functions/react_router.isRouteErrorResponse
 [cache-control-header]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
 [headers]: https://developer.mozilla.org/en-US/docs/Web/API/Response
 [use-matches]: https://api.reactrouter.com/v7/functions/react_router.useMatches
 [link-element]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
 [meta-element]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
-[meta-params]: https://api.reactrouter.com/v7/interfaces/react_router.MetaArgs
-[use-revalidator]: https://api.reactrouter.com/v7/functions/react_router.useRevalidator.html
+[route-module]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html
+[component-props]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html#default
+[loader-params]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html#loader
+[client-loader-params]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html#clientLoader
+[action-params]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html#actioin
+[client-action-params]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html#clientAction
+[meta-params]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html#meta
+[links-params]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html#links
+[handle]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html#handle
+[errorboundary-props]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html#ErrorBoundary
+[hydratefallback-props]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html#HydrateFallback
+[headers-params]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html#headers
+[shouldrevalidate-params]: https://api.reactrouter.com/v7/interfaces/react_router.ServerRouteModule.html#shouldRevalidate

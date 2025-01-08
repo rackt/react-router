@@ -6,8 +6,8 @@ import type {
 } from "../router/utils";
 import { callRouteHandler } from "./data";
 import type { FutureConfig } from "../dom/ssr/entry";
+import type { ServerRouteModule } from "../dom/ssr/routeModules";
 import type { Route } from "../dom/ssr/routes";
-import type { ServerRouteModule } from "./routeModules";
 import type {
   SingleFetchResult,
   SingleFetchResults,

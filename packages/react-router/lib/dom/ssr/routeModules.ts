@@ -1,4 +1,4 @@
-import type { ComponentType, ReactElement } from "react";
+import type * as React from "react";
 import type { Location } from "../../router/history";
 import type {
   ActionFunction,
@@ -18,17 +18,80 @@ export interface RouteModules {
   [routeId: string]: RouteModule | undefined;
 }
 
+/**
+ * The shape of a route module shipped to the client
+ */
 export interface RouteModule {
+  /**
+   * Action function called only in the browser.  Route client loaders provide
+   * data to route components in addition to, or in place of, route loaders.
+   */
   clientAction?: ClientActionFunction;
+  /**
+   * Like route actions but only called in the browser.
+   */
   clientLoader?: ClientLoaderFunction;
-  ErrorBoundary?: ErrorBoundaryComponent;
-  HydrateFallback?: HydrateFallbackComponent;
+  /**
+   * ErrorBoundary to display for this route
+   */
+  ErrorBoundary?: React.ComponentType;
+  /**
+   * `<Route HydrateFallback>` component to render on initial loads
+   * when client loaders are present
+   */
+  HydrateFallback?: React.ComponentType;
+  /**
+   * The `Layout` export is only applicable to the root route.  Because the root
+   * route manages the document for all routes, it supports an additional optional
+   * `Layout` export that will be wrapped around the rendered UI, which may come
+   * from the default `Component` export, the `ErrorBoundary`, or the `HydrateFallback`
+   */
   Layout?: LayoutComponent;
-  default: RouteComponent;
+  /**
+   * Defines the component that will render when the route matches.
+   */
+  default: React.ComponentType<{}>;
+  /**
+   * Route handle allows apps to add anything to a route match in `useMatches`
+   * to create abstractions (like breadcrumbs, etc.).
+   */
   handle?: RouteHandle;
+  /**
+   * Route links define [`<link>` element][link-element]s to be rendered in the
+   * document `<head>`.
+   */
   links?: LinksFunction;
+  /**
+   * Route meta defines meta tags to be rendered in the `<head>` of the document.
+   */
   meta?: MetaFunction;
+  /**
+   * By default, all routes are revalidated after actions. This function allows
+   * a route to opt-out of revalidation for actions that don't affect its data.
+   */
   shouldRevalidate?: ShouldRevalidateFunction;
+}
+
+/**
+ * The shape of a route module file for your application
+ */
+export interface ServerRouteModule extends RouteModule {
+  /**
+   * Route actions allow server-side data mutations with automatic revalidation
+   * of all loader data on the page when called from `<Form>`, `useFetcher`,
+   * and `useSubmit`.
+   * */
+  action?: ActionFunction;
+  /**
+   * Route headers define HTTP headers to be sent with the response when server rendering.
+   */
+  headers?: HeadersFunction | { [name: string]: string };
+  /**
+   * Route loaders provide data to route components before they are rendered.
+   * They are only called on the server when server rendering or during the
+   * build with pre-rendering.
+   */
+  loader?: LoaderFunction;
 }
 
 /**
@@ -62,26 +125,30 @@ export type ClientLoaderFunctionArgs = LoaderFunctionArgs<undefined> & {
 };
 
 /**
- * ErrorBoundary to display for this route
+ * Parameters passed to the [`headers`]{@link HeadersFunction} function
  */
-export type ErrorBoundaryComponent = ComponentType;
+export type HeadersArgs = {
+  loaderHeaders: Headers;
+  parentHeaders: Headers;
+  actionHeaders: Headers;
+  errorHeaders: Headers | undefined;
+};
 
 /**
- * `<Route HydrateFallback>` component to render on initial loads
- * when client loaders are present
+ * A function that returns HTTP headers to be used for a route. These headers
+ * will be merged with (and take precedence over) headers from parent routes.
  */
-export type HydrateFallbackComponent = ComponentType;
+export interface HeadersFunction {
+  (args: HeadersArgs): Headers | HeadersInit;
+}
 
 /**
  * Optional, root-only `<Route Layout>` component to wrap the root content in.
  * Useful for defining the <html>/<head>/<body> document shell shared by the
  * Component, HydrateFallback, and ErrorBoundary
  */
-export type LayoutComponent = ComponentType<{
-  children: ReactElement<
-    unknown,
-    ErrorBoundaryComponent | HydrateFallbackComponent | RouteComponent
-  >;
+export type LayoutComponent = React.ComponentType<{
+  children: React.ReactElement;
 }>;
 
 /**
@@ -217,11 +284,6 @@ type LdJsonObject = { [Key in string]: LdJsonValue } & {
 type LdJsonArray = LdJsonValue[] | readonly LdJsonValue[];
 type LdJsonPrimitive = string | number | boolean | null;
 type LdJsonValue = LdJsonPrimitive | LdJsonObject | LdJsonArray;
-
-/**
- * A React component that is rendered for a route.
- */
-export type RouteComponent = ComponentType<{}>;
 
 /**
  * An arbitrary object that is associated with a route.
