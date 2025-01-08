@@ -104,6 +104,8 @@ export interface Listener {
  */
 export type To = string | Partial<Path>;
 
+export type HashType = 'slash' | 'noslash';
+
 /**
  * A history is an interface to the navigation stack. The history serves as the
  * source of truth for the current location, as well as provides a set of
@@ -403,7 +405,7 @@ export function createBrowserHistory(
  */
 export interface HashHistory extends UrlHistory {}
 
-export type HashHistoryOptions = UrlHistoryOptions;
+export type HashHistoryOptions = UrlHistoryOptions & {hashType?:HashType};
 
 /**
  * Hash history stores the location in window.location.hash. This makes it ideal
@@ -418,13 +420,21 @@ export function createHashHistory(
 ): HashHistory {
   function createHashLocation(
     window: Window,
-    globalHistory: Window["history"]
+    globalHistory: Window["history"],
+    hashType: HashType
   ) {
+    let path;
+    if (hashType !== 'slash' && window.location.hash.startsWith("#/") && window.location.hash.length > 2){
+      path = "/" + window.location.hash.substring(1)
+    }
+    else {
+        path = window.location.hash.substring(1)
+    }
     let {
       pathname = "/",
       search = "",
       hash = "",
-    } = parsePath(window.location.hash.substring(1));
+    } = parsePath(path);
 
     // Hash URL should always have a leading / just like window.location.pathname
     // does, so if an app ends up at a route like /#something then we add a
@@ -445,7 +455,7 @@ export function createHashHistory(
     );
   }
 
-  function createHashHref(window: Window, to: To) {
+  function createHashHref(window: Window, to: To, hashType: HashType) {
     let base = window.document.querySelector("base");
     let href = "";
 
@@ -455,7 +465,7 @@ export function createHashHistory(
       href = hashIndex === -1 ? url : url.slice(0, hashIndex);
     }
 
-    return href + "#" + (typeof to === "string" ? to : createPath(to));
+    return href + "#" + (typeof to === "string" ? to : hashType === 'slash' ? createPath(to) : createPath(to).slice(1).concat());
   }
 
   function validateHashLocation(location: Location, to: To) {
@@ -599,15 +609,16 @@ export interface UrlHistory extends History {}
 export type UrlHistoryOptions = {
   window?: Window;
   v5Compat?: boolean;
+  hashType?: HashType;
 };
 
 function getUrlBasedHistory(
-  getLocation: (window: Window, globalHistory: Window["history"]) => Location,
-  createHref: (window: Window, to: To) => string,
+  getLocation: (window: Window, globalHistory: Window["history"], hashType: HashType) => Location,
+  createHref: (window: Window, to: To, hashType: HashType) => string,
   validateLocation: ((location: Location, to: To) => void) | null,
   options: UrlHistoryOptions = {}
 ): UrlHistory {
-  let { window = document.defaultView!, v5Compat = false } = options;
+  let { window = document.defaultView!, v5Compat = false, hashType = 'slash' } = options;
   let globalHistory = window.history;
   let action = Action.Pop;
   let listener: Listener | null = null;
@@ -707,7 +718,7 @@ function getUrlBasedHistory(
       return action;
     },
     get location() {
-      return getLocation(window, globalHistory);
+      return getLocation(window, globalHistory, hashType);
     },
     listen(fn: Listener) {
       if (listener) {
@@ -722,7 +733,7 @@ function getUrlBasedHistory(
       };
     },
     createHref(to) {
-      return createHref(window, to);
+      return createHref(window, to, hashType);
     },
     createURL,
     encodeLocation(to) {
