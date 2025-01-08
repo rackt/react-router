@@ -1,7 +1,7 @@
 import type { StaticHandlerContext } from "../../router/router";
 
 import type { EntryRoute } from "./routes";
-import type { RouteModules } from "./routeModules";
+import type { LoadRouteModuleFunction, RouteModules } from "./routeModules";
 import type { RouteManifest } from "../../router/utils";
 
 type SerializedError = {
@@ -17,6 +17,7 @@ export interface FrameworkContextObject {
   serverHandoffString?: string;
   future: FutureConfig;
   isSpaMode: boolean;
+  loadRouteModule: LoadRouteModuleFunction;
   serializeError?(error: Error): SerializedError;
   renderMeta?: {
     didRenderScripts?: boolean;
