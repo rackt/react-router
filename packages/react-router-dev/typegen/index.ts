@@ -6,9 +6,13 @@ import type vite from "vite";
 
 import { createConfigLoader } from "../config/config";
 
-import { generate } from "./generate";
+import {
+  generate,
+  generateRouteManifest,
+  generateUseRouteLoaderDataType,
+} from "./generate";
 import type { Context } from "./context";
-import { getTypesDir, getTypesPath } from "./paths";
+import { getTypesDir, getTypesPath, getGlobalTypesFilePath } from "./paths";
 
 export async function run(rootDirectory: string) {
   const ctx = await createContext({ rootDirectory, watch: false });
@@ -81,4 +85,17 @@ async function writeAll(ctx: Context): Promise<void> {
     fs.mkdirSync(Path.dirname(typesPath), { recursive: true });
     fs.writeFileSync(typesPath, content);
   });
+
+  const useRouteLoaderDataContent = generateUseRouteLoaderDataType(ctx);
+  const useRouteLoaderDataTypesPath = getGlobalTypesFilePath(
+    ctx,
+    "useRouteLoaderData"
+  );
+  fs.writeFileSync(useRouteLoaderDataTypesPath, useRouteLoaderDataContent);
+
+  if (ctx.config.future.typesafeUseRouteLoaderData) {
+    const routeManifestContent = generateRouteManifest(ctx);
+    const routeManifestPath = getGlobalTypesFilePath(ctx, "routeManifest");
+    fs.writeFileSync(routeManifestPath, routeManifestContent);
+  }
 }

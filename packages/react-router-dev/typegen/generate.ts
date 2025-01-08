@@ -4,7 +4,7 @@ import * as Pathe from "pathe/utils";
 
 import { type RouteManifest, type RouteManifestEntry } from "../config/routes";
 import { type Context } from "./context";
-import { getTypesPath } from "./paths";
+import { getTypesDir, getTypesPath } from "./paths";
 
 export function generate(ctx: Context, route: RouteManifestEntry): string {
   const lineage = getRouteLineage(ctx.config.routes, route);
@@ -119,4 +119,45 @@ function parseParams(urlpath: string) {
   const hasSplat = segments.at(-1) === "*";
   if (hasSplat) result["*"] = [false];
   return result;
+}
+
+export function generateRouteManifest(ctx: Context) {
+  return ts`
+    export type RouteManifest = {
+      ${Object.entries(ctx.config.routes)
+        .map(([routeId, routeEntry], i) => {
+          const indent = i === 0 ? "" : "  ".repeat(3);
+          const routeTypeFile = Path.relative(
+            getTypesDir(ctx),
+            getTypesPath(ctx, routeEntry)
+          );
+          return `${indent}"${routeId}": import("./${routeTypeFile}").Info,`;
+        })
+        .join("\n")}
+    };
+
+    export type RouteId = keyof RouteManifest;
+  `;
+}
+
+export function generateUseRouteLoaderDataType(ctx: Context) {
+  if (ctx.config.future.typesafeUseRouteLoaderData) {
+    return ts`
+      import type { RouteId, RouteManifest } from "./routeManifest";
+
+      declare module "react-router" {
+        export function useRouteLoaderData<RI extends RouteId>(
+          id: RI,
+        ): RouteManifest[RI]["loaderData"] | undefined;
+      }
+    `;
+  }
+
+  return ts`
+    declare module "react-router" {
+      export function useRouteLoaderData<T = any>(
+        routeId: string
+      ): SerializeFrom<T> | undefined;
+    }
+  `;
 }

@@ -16,3 +16,7 @@ export function getTypesPath(ctx: Context, route: RouteManifestEntry) {
     "+types/" + Pathe.filename(route.file) + ".ts"
   );
 }
+
+export function getGlobalTypesFilePath(ctx: Context, fileName: string) {
+  return Path.join(getTypesDir(ctx), Pathe.filename(fileName) + ".d.ts");
+}

@@ -1117,7 +1117,7 @@ export function useLoaderData<T = any>(): SerializeFrom<T> {
   @category Hooks
  */
 export function useRouteLoaderData<T = any>(
-  routeId: string
+  routeId: never // actually string after typegen; never allows typesafeUseRouteLoaderData future flag to work
 ): SerializeFrom<T> | undefined {
   let state = useDataRouterState(DataRouterStateHook.UseRouteLoaderData);
   return state.loaderData[routeId] as SerializeFrom<T> | undefined;

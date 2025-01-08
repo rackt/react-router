@@ -86,6 +86,7 @@ type ServerModuleFormat = "esm" | "cjs";
 
 interface FutureConfig {
   unstable_optimizeDeps: boolean;
+  typesafeUseRouteLoaderData: boolean;
 }
 
 export type BuildManifest = DefaultBuildManifest | ServerBundlesBuildManifest;
@@ -483,6 +484,8 @@ async function resolveConfig({
   let future: FutureConfig = {
     unstable_optimizeDeps:
       reactRouterUserConfig.future?.unstable_optimizeDeps ?? false,
+    typesafeUseRouteLoaderData:
+      reactRouterUserConfig.future?.typesafeUseRouteLoaderData ?? false,
   };
 
   let reactRouterConfig: ResolvedReactRouterConfig = deepFreeze({
