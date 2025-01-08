@@ -832,9 +832,9 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
           optimizeDeps: {
             entries: ctx.reactRouterConfig.future.unstable_optimizeDeps
               ? [
-                  ctx.entryClientFilePath,
+                  vite.normalizePath(ctx.entryClientFilePath),
                   ...Object.values(ctx.reactRouterConfig.routes).map((route) =>
-                    path.join(ctx.reactRouterConfig.appDirectory, route.file)
+                    resolveRelativeRouteFilePath(route, ctx.reactRouterConfig)
                   ),
                 ]
               : [],
