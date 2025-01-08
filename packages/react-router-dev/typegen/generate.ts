@@ -1,10 +1,15 @@
 import ts from "dedent";
 import * as Path from "pathe";
-import * as Pathe from "pathe/utils";
 
 import { type RouteManifest, type RouteManifestEntry } from "../config/routes";
 import { type Context } from "./context";
 import { getTypesPath } from "./paths";
+
+function getTypescriptSafePath(path: string) {
+  // In typescript, we want to support "moduleResolution": "nodenext" as well as not having "allowImportingTsExtensions": true,
+  // so we normalize all JS like files to `.js`, but allow other extensions such as `.mdx` and others that might be used as routes.
+  return path.replace(/\.(js|ts)x?$/, ".js");
+}
 
 export function generate(ctx: Context, route: RouteManifestEntry): string {
   const lineage = getRouteLineage(ctx.config.routes, route);
@@ -20,9 +25,9 @@ export function generate(ctx: Context, route: RouteManifestEntry): string {
       );
 
       const indent = i === 0 ? "" : "  ".repeat(2);
-      let source = noExtension(rel);
+      let source = getTypescriptSafePath(rel);
       if (!source.startsWith("../")) source = "./" + source;
-      return `${indent}import type { Info as Parent${i} } from "${source}.js"`;
+      return `${indent}import type { Info as Parent${i} } from "${source}"`;
     })
     .join("\n");
 
@@ -34,7 +39,7 @@ export function generate(ctx: Context, route: RouteManifestEntry): string {
 
     ${parentTypeImports}
 
-    type Module = typeof import("../${Pathe.filename(route.file)}.js")
+    type Module = typeof import("../${getTypescriptSafePath(Path.basename(route.file))}")
 
     export type Info = {
       parents: [${parents.map((_, i) => `Parent${i}`).join(", ")}],
@@ -71,9 +76,6 @@ export function generate(ctx: Context, route: RouteManifestEntry): string {
     }
   `;
 }
-
-const noExtension = (path: string) =>
-  Path.join(Path.dirname(path), Pathe.filename(path));
 
 function getRouteLineage(routes: RouteManifest, route: RouteManifestEntry) {
   const result: RouteManifestEntry[] = [];
