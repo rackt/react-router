@@ -753,3 +753,7 @@ function findEntry(
 
   return undefined;
 }
+
+export function defineConfig(config: ReactRouterConfig){
+  return config
+}
