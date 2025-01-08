@@ -25,7 +25,6 @@
     ".": {
       "node": {
         "types": "./dist/development/index.d.ts",
-        "module-sync": "./dist/development/index.mjs",
         "default": "./dist/development/index.js"
       },
       "import": {
