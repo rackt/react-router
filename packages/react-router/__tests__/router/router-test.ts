@@ -1320,6 +1320,7 @@ describe("a router", () => {
         request: new Request("http://localhost/tasks", {
           signal: nav.loaders.tasks.stub.mock.calls[0][0].request.signal,
         }),
+        context: {},
       });
 
       let nav2 = await t.navigate("/tasks/1");
@@ -1328,6 +1329,7 @@ describe("a router", () => {
         request: new Request("http://localhost/tasks/1", {
           signal: nav2.loaders.tasksId.stub.mock.calls[0][0].request.signal,
         }),
+        context: {},
       });
 
       let nav3 = await t.navigate("/tasks?foo=bar#hash");
@@ -1336,6 +1338,7 @@ describe("a router", () => {
         request: new Request("http://localhost/tasks?foo=bar", {
           signal: nav3.loaders.tasks.stub.mock.calls[0][0].request.signal,
         }),
+        context: {},
       });
 
       let nav4 = await t.navigate("/tasks#hash", {
@@ -1346,6 +1349,7 @@ describe("a router", () => {
         request: new Request("http://localhost/tasks?foo=bar", {
           signal: nav4.loaders.tasks.stub.mock.calls[0][0].request.signal,
         }),
+        context: {},
       });
 
       expect(t.router.state.navigation.formAction).toBe("/tasks");
@@ -1743,6 +1747,7 @@ describe("a router", () => {
       expect(nav.actions.tasks.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       // Assert request internals, cannot do a deep comparison above since some
@@ -1786,6 +1791,7 @@ describe("a router", () => {
       expect(nav.actions.tasks.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
       // Assert request internals, cannot do a deep comparison above since some
       // internals aren't the same on separate creations
@@ -1818,6 +1824,7 @@ describe("a router", () => {
       expect(nav.actions.tasks.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       // Assert request internals, cannot do a deep comparison above since some

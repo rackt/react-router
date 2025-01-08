@@ -24,6 +24,7 @@ import type {
 import { createRouter } from "./router/router";
 import type {
   DataStrategyFunction,
+  DefaultRouterContext,
   LazyRouteFunction,
   TrackedPromise,
 } from "./router/utils";
@@ -130,23 +131,62 @@ export function mapRouteProperties(route: RouteObject) {
   return updates;
 }
 
+export interface MemoryRouterOpts {
+  /**
+   * Basename path for the application.
+   */
+  basename?: string;
+  /**
+   * Router context singleton that will be passed to loader/action functions.
+   */
+  context?: DefaultRouterContext;
+  /**
+   * Future flags to enable for the router.
+   */
+  future?: Partial<FutureConfig>;
+  /**
+   * Hydration data to initialize the router with if you have already performed
+   * data loading on the server.
+   */
+  hydrationData?: HydrationState;
+  /**
+   * Initial entires in the in-memory history stack
+   */
+  initialEntries?: InitialEntry[];
+  /**
+   * Index of `initialEntries` the application should initialize to
+   */
+  initialIndex?: number;
+  /**
+   * Override the default data strategy of loading in parallel.
+   * Only intended for advanced usage.
+   */
+  dataStrategy?: DataStrategyFunction;
+  /**
+   * Lazily define portions of the route tree on navigations.
+   */
+  patchRoutesOnNavigation?: PatchRoutesOnNavigationFunction;
+}
+
 /**
+ * Create a new data router that manages the application path using an in-memory
+ * history stack.  Useful for non-browser environments without a DOM API.
+ *
  * @category Routers
  */
 export function createMemoryRouter(
+  /**
+   * Application routes
+   */
   routes: RouteObject[],
-  opts?: {
-    basename?: string;
-    future?: Partial<FutureConfig>;
-    hydrationData?: HydrationState;
-    initialEntries?: InitialEntry[];
-    initialIndex?: number;
-    dataStrategy?: DataStrategyFunction;
-    patchRoutesOnNavigation?: PatchRoutesOnNavigationFunction;
-  }
+  /**
+   * Router options
+   */
+  opts?: MemoryRouterOpts
 ): DataRouter {
   return createRouter({
     basename: opts?.basename,
+    context: opts?.context,
     future: opts?.future,
     history: createMemoryHistory({
       initialEntries: opts?.initialEntries,

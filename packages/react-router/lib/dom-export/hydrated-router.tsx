@@ -24,6 +24,7 @@ import {
   matchRoutes,
 } from "react-router";
 import { RouterProvider } from "./dom-router-provider";
+import { DefaultRouterContext } from "../router/utils";
 
 type SSRInfo = {
   context: NonNullable<(typeof window)["__reactRouterContext"]>;
@@ -60,7 +61,11 @@ function initSsrInfo(): void {
   }
 }
 
-function createHydratedRouter(): DataRouter {
+function createHydratedRouter({
+  context,
+}: {
+  context?: DefaultRouterContext;
+}): DataRouter {
   initSsrInfo();
 
   if (!ssrInfo) {
@@ -166,6 +171,7 @@ function createHydratedRouter(): DataRouter {
     routes,
     history: createBrowserHistory(),
     basename: ssrInfo.context.basename,
+    context,
     hydrationData,
     mapRouteProperties,
     dataStrategy: getSingleFetchDataStrategy(
@@ -198,12 +204,23 @@ function createHydratedRouter(): DataRouter {
   return router;
 }
 
+interface HydratedRouterProps {
+  /**
+   * Context object to passed through to `createBrowserRouter` and made available
+   * to `clientLoader`/`clientActon` functions
+   */
+  context?: DefaultRouterContext;
+}
+
 /**
+ * Framework-mode router component to be used in `entry.client.tsx` to hydrate a
+ * router from a `ServerRouter`
+ *
  * @category Router Components
  */
-export function HydratedRouter() {
+export function HydratedRouter(props: HydratedRouterProps) {
   if (!router) {
-    router = createHydratedRouter();
+    router = createHydratedRouter({ context: props.context });
   }
 
   // Critical CSS can become stale after code changes, e.g. styles might be

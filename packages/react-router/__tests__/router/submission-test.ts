@@ -948,6 +948,7 @@ describe("submissions", () => {
       expect(nav.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = nav.actions.root.stub.mock.calls[0][0].request;
@@ -981,6 +982,7 @@ describe("submissions", () => {
       expect(nav.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = nav.actions.root.stub.mock.calls[0][0].request;
@@ -1012,6 +1014,7 @@ describe("submissions", () => {
       expect(nav.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = nav.actions.root.stub.mock.calls[0][0].request;
@@ -1115,6 +1118,7 @@ describe("submissions", () => {
       expect(nav.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = nav.actions.root.stub.mock.calls[0][0].request;
@@ -1152,6 +1156,7 @@ describe("submissions", () => {
       expect(nav.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = nav.actions.root.stub.mock.calls[0][0].request;
@@ -1186,6 +1191,7 @@ describe("submissions", () => {
       expect(nav.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = nav.actions.root.stub.mock.calls[0][0].request;

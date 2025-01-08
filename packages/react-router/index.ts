@@ -85,6 +85,7 @@ export type {
   AwaitProps,
   IndexRouteProps,
   LayoutRouteProps,
+  MemoryRouterOpts,
   MemoryRouterProps,
   NavigateProps,
   OutletProps,
@@ -94,7 +95,6 @@ export type {
   RouterProviderProps,
   RoutesProps,
 } from "./lib/components";
-export type { NavigateFunction } from "./lib/hooks";
 export {
   Await,
   MemoryRouter,
@@ -109,6 +109,7 @@ export {
   createRoutesFromElements,
   renderMatches,
 } from "./lib/components";
+export type { NavigateFunction } from "./lib/hooks";
 export {
   useBlocker,
   useActionData,
@@ -136,6 +137,7 @@ export {
 // Expose old RR DOM API
 export type {
   BrowserRouterProps,
+  DOMRouterOpts,
   HashRouterProps,
   HistoryRouterProps,
   LinkProps,

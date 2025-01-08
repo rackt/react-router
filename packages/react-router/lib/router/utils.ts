@@ -112,25 +112,32 @@ export type Submission =
 
 /**
  * @private
+ * Default context value type for `createRouter`, can be overridden via the generics
+ * on LoaderFunction/LoaderFunctionArgs/ActionFunction/ActionFunctionArgs
+ */
+export type DefaultRouterContext = any;
+
+/**
+ * @private
  * Arguments passed to route loader/action functions.  Same for now but we keep
  * this as a private implementation detail in case they diverge in the future.
  */
 interface DataFunctionArgs<Context> {
   request: Request;
   params: Params;
-  context?: Context;
+  context: Context;
 }
 
 /**
  * Arguments passed to loader functions
  */
-export interface LoaderFunctionArgs<Context = any>
+export interface LoaderFunctionArgs<Context = DefaultRouterContext>
   extends DataFunctionArgs<Context> {}
 
 /**
  * Arguments passed to action functions
  */
-export interface ActionFunctionArgs<Context = any>
+export interface ActionFunctionArgs<Context = DefaultRouterContext>
   extends DataFunctionArgs<Context> {}
 
 /**
@@ -145,7 +152,7 @@ type DataFunctionReturnValue = Promise<DataFunctionValue> | DataFunctionValue;
 /**
  * Route loader function signature
  */
-export type LoaderFunction<Context = any> = {
+export type LoaderFunction<Context = DefaultRouterContext> = {
   (
     args: LoaderFunctionArgs<Context>,
     handlerCtx?: unknown
@@ -155,7 +162,7 @@ export type LoaderFunction<Context = any> = {
 /**
  * Route action function signature
  */
-export interface ActionFunction<Context = any> {
+export interface ActionFunction<Context = DefaultRouterContext> {
   (
     args: ActionFunctionArgs<Context>,
     handlerCtx?: unknown
@@ -202,7 +209,7 @@ export interface DataStrategyMatch
   ) => Promise<DataStrategyResult>;
 }
 
-export interface DataStrategyFunctionArgs<Context = any>
+export interface DataStrategyFunctionArgs<Context = DefaultRouterContext>
   extends DataFunctionArgs<Context> {
   matches: DataStrategyMatch[];
   fetcherKey: string | null;

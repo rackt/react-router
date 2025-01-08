@@ -10,3 +10,4 @@ packages/react-router-dom/server.d.ts
 packages/react-router-dom/server.js
 packages/react-router-dom/server.mjs
 tutorial/dist/
+public/

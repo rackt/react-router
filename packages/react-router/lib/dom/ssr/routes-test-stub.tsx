@@ -1,10 +1,5 @@
 import * as React from "react";
-import type {
-  ActionFunction,
-  ActionFunctionArgs,
-  LoaderFunction,
-  LoaderFunctionArgs,
-} from "../../router/utils";
+import type { ActionFunction, LoaderFunction } from "../../router/utils";
 import type {
   DataRouteObject,
   IndexRouteObject,
@@ -14,6 +9,7 @@ import type { LinksFunction, MetaFunction, RouteModules } from "./routeModules";
 import type { InitialEntry } from "../../router/history";
 import type { HydrationState } from "../../router/router";
 import { convertRoutesToDataRoutes } from "../../router/utils";
+import type { AppLoadContext } from "../../server-runtime/data";
 import type {
   AssetsManifest,
   FutureConfig,
@@ -48,10 +44,6 @@ interface StubNonIndexRouteObject
 }
 
 type StubRouteObject = StubIndexRouteObject | StubNonIndexRouteObject;
-
-interface AppLoadContext {
-  [key: string]: unknown;
-}
 
 export interface RoutesTestStubProps {
   /**
@@ -118,13 +110,14 @@ export function createRoutesStub(
       // Update the routes to include context in the loader/action and populate
       // the manifest and routeModules during the walk
       let patched = processRoutes(
-        // @ts-expect-error loader/action context types don't match :/
+        // @ts-expect-error `StubRouteObject` is stricter about `loader`/`action`
+        // types compared to `AgnosticRouteObject`
         convertRoutesToDataRoutes(routes, (r) => r),
-        context,
         remixContextRef.current.manifest,
         remixContextRef.current.routeModules
       );
       routerRef.current = createMemoryRouter(patched, {
+        context,
         initialEntries,
         initialIndex,
         hydrationData,
@@ -141,7 +134,6 @@ export function createRoutesStub(
 
 function processRoutes(
   routes: StubRouteObject[],
-  context: AppLoadContext,
   manifest: AssetsManifest,
   routeModules: RouteModules,
   parentId?: string
@@ -153,8 +145,6 @@ function processRoutes(
       );
     }
 
-    // Patch in the Remix context to loaders/actions
-    let { loader, action } = route;
     let newRoute: DataRouteObject = {
       id: route.id,
       path: route.path,
@@ -162,12 +152,8 @@ function processRoutes(
       Component: route.Component,
       HydrateFallback: route.HydrateFallback,
       ErrorBoundary: route.ErrorBoundary,
-      action: action
-        ? (args: ActionFunctionArgs) => action!({ ...args, context })
-        : undefined,
-      loader: loader
-        ? (args: LoaderFunctionArgs) => loader!({ ...args, context })
-        : undefined,
+      action: route.action,
+      loader: route.loader,
       handle: route.handle,
       shouldRevalidate: route.shouldRevalidate,
     };
@@ -203,7 +189,6 @@ function processRoutes(
     if (route.children) {
       newRoute.children = processRoutes(
         route.children,
-        context,
         manifest,
         routeModules,
         newRoute.id

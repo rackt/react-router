@@ -32,6 +32,7 @@ import type {
   UIMatch,
   AgnosticPatchRoutesOnNavigationFunction,
   DataWithResponseInit,
+  DefaultRouterContext,
 } from "./utils";
 import {
   ErrorResponseImpl,
@@ -365,6 +366,7 @@ export interface RouterInit {
   routes: AgnosticRouteObject[];
   history: History;
   basename?: string;
+  context?: DefaultRouterContext;
   mapRouteProperties?: MapRoutePropertiesFunction;
   future?: Partial<FutureConfig>;
   hydrationData?: HydrationState;
@@ -812,6 +814,7 @@ export function createRouter(init: RouterInit): Router {
   );
   let inFlightDataRoutes: AgnosticDataRouteObject[] | undefined;
   let basename = init.basename || "/";
+  let routerContext = typeof init.context !== "undefined" ? init.context : {};
   let dataStrategyImpl = init.dataStrategy || defaultDataStrategy;
   let patchRoutesOnNavigationImpl = init.patchRoutesOnNavigation;
 
@@ -2731,13 +2734,13 @@ export function createRouter(init: RouterInit): Router {
       results = await callDataStrategyImpl(
         dataStrategyImpl,
         type,
-        state,
         request,
         matchesToLoad,
         matches,
         fetcherKey,
         manifest,
-        mapRouteProperties
+        mapRouteProperties,
+        routerContext
       );
     } catch (e) {
       // If the outer dataStrategy method throws, just return the error for all
@@ -3346,10 +3349,10 @@ export function createStaticHandler(
    * from action/loaders Responses.
    *
    * It _should_ never throw and should report all errors through the
-   * returned context.errors object, properly associating errors to their error
-   * boundary.  Additionally, it tracks _deepestRenderedBoundaryId which can be
-   * used to emulate React error boundaries during SSr by performing a second
-   * pass only down to the boundaryId.
+   * returned handlerContext.errors object, properly associating errors to
+   * their error boundary.  Additionally, it tracks _deepestRenderedBoundaryId
+   * which can be used to emulate React error boundaries during SSR by performing
+   * a second pass only down to the boundaryId.
    *
    * The one exception where we do not return a StaticHandlerContext is when a
    * redirect response is returned or thrown from any action/loader.  We
@@ -3685,7 +3688,7 @@ export function createStaticHandler(
         ? actionMatch
         : findNearestBoundary(matches, actionMatch.route.id);
 
-      let context = await loadRouteData(
+      let handlerContext = await loadRouteData(
         loaderRequest,
         matches,
         requestContext,
@@ -3697,7 +3700,7 @@ export function createStaticHandler(
 
       // action status codes take precedence over loader status codes
       return {
-        ...context,
+        ...handlerContext,
         statusCode: isRouteErrorResponse(result.error)
           ? result.error.status
           : result.statusCode != null
@@ -3710,7 +3713,7 @@ export function createStaticHandler(
       };
     }
 
-    let context = await loadRouteData(
+    let handlerContext = await loadRouteData(
       loaderRequest,
       matches,
       requestContext,
@@ -3720,7 +3723,7 @@ export function createStaticHandler(
     );
 
     return {
-      ...context,
+      ...handlerContext,
       actionData: {
         [actionMatch.route.id]: result.data,
       },
@@ -3806,7 +3809,7 @@ export function createStaticHandler(
     }
 
     // Process and commit output from loaders
-    let context = processRouteLoaderData(
+    let handlerContext = processRouteLoaderData(
       matches,
       results,
       pendingActionResult,
@@ -3820,12 +3823,12 @@ export function createStaticHandler(
     );
     matches.forEach((match) => {
       if (!executedLoaders.has(match.route.id)) {
-        context.loaderData[match.route.id] = null;
+        handlerContext.loaderData[match.route.id] = null;
       }
     });
 
     return {
-      ...context,
+      ...handlerContext,
       matches,
     };
   }
@@ -3838,20 +3841,19 @@ export function createStaticHandler(
     matchesToLoad: AgnosticDataRouteMatch[],
     matches: AgnosticDataRouteMatch[],
     isRouteRequest: boolean,
-    requestContext: unknown,
+    routerContext: unknown,
     dataStrategy: DataStrategyFunction | null
   ): Promise<Record<string, DataResult>> {
     let results = await callDataStrategyImpl(
       dataStrategy || defaultDataStrategy,
       type,
-      null,
       request,
       matchesToLoad,
       matches,
       null,
       manifest,
       mapRouteProperties,
-      requestContext
+      routerContext
     );
 
     let dataResults: Record<string, DataResult> = {};
@@ -3906,17 +3908,16 @@ export function createStaticHandler(
  */
 export function getStaticContextFromError(
   routes: AgnosticDataRouteObject[],
-  context: StaticHandlerContext,
+  handlerContext: StaticHandlerContext,
   error: any
-) {
-  let newContext: StaticHandlerContext = {
-    ...context,
+): StaticHandlerContext {
+  return {
+    ...handlerContext,
     statusCode: isRouteErrorResponse(error) ? error.status : 500,
     errors: {
-      [context._deepestRenderedBoundaryId || routes[0].id]: error,
+      [handlerContext._deepestRenderedBoundaryId || routes[0].id]: error,
     },
   };
-  return newContext;
 }
 
 function throwStaticHandlerAbortedError(
@@ -4622,14 +4623,13 @@ async function defaultDataStrategy({
 async function callDataStrategyImpl(
   dataStrategyImpl: DataStrategyFunction,
   type: "loader" | "action",
-  state: RouterState | null,
   request: Request,
   matchesToLoad: AgnosticDataRouteMatch[],
   matches: AgnosticDataRouteMatch[],
   fetcherKey: string | null,
   manifest: RouteManifest,
   mapRouteProperties: MapRoutePropertiesFunction,
-  requestContext?: unknown
+  routerContext: unknown
 ): Promise<Record<string, DataStrategyResult>> {
   let loadRouteDefinitionsPromises = matches.map((m) =>
     m.route.lazy
@@ -4659,7 +4659,7 @@ async function callDataStrategyImpl(
             match,
             loadRoutePromise,
             handlerOverride,
-            requestContext
+            routerContext
           )
         : Promise.resolve({ type: ResultType.data, result: undefined });
     };
@@ -4679,7 +4679,7 @@ async function callDataStrategyImpl(
     request,
     params: matches[0].params,
     fetcherKey,
-    context: requestContext,
+    context: routerContext,
   });
 
   // Wait for all routes to load here but 'swallow the error since we want
@@ -4701,7 +4701,7 @@ async function callLoaderOrAction(
   match: AgnosticDataRouteMatch,
   loadRoutePromise: Promise<void> | undefined,
   handlerOverride: Parameters<DataStrategyMatch["resolve"]>[0],
-  staticContext?: unknown
+  routerContext: unknown
 ): Promise<DataStrategyResult> {
   let result: DataStrategyResult;
   let onReject: (() => void) | undefined;
@@ -4730,7 +4730,7 @@ async function callLoaderOrAction(
         {
           request,
           params: match.params,
-          context: staticContext,
+          context: routerContext,
         },
         ...(ctx !== undefined ? [ctx] : [])
       );

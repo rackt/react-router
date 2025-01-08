@@ -310,7 +310,7 @@ export function createClientRoutes(
         (routeModule.clientLoader?.hydrate === true || !route.hasLoader);
 
       dataRoute.loader = async (
-        { request, params }: LoaderFunctionArgs,
+        { request, params, context }: LoaderFunctionArgs,
         singleFetch?: unknown
       ) => {
         try {
@@ -328,6 +328,7 @@ export function createClientRoutes(
             return routeModule.clientLoader({
               request,
               params,
+              context,
               async serverLoader() {
                 preventInvalidServerHandlerCall("loader", route, isSpaMode);
 
@@ -362,7 +363,7 @@ export function createClientRoutes(
       );
 
       dataRoute.action = (
-        { request, params }: ActionFunctionArgs,
+        { request, params, context }: ActionFunctionArgs,
         singleFetch?: unknown
       ) => {
         return prefetchStylesAndCallHandler(async () => {
@@ -380,6 +381,7 @@ export function createClientRoutes(
           return routeModule.clientAction({
             request,
             params,
+            context,
             async serverAction() {
               preventInvalidServerHandlerCall("action", route, isSpaMode);
               return fetchServerAction(singleFetch);
@@ -392,20 +394,14 @@ export function createClientRoutes(
       // the server loader/action in parallel with the module load so we add
       // loader/action as static props on the route
       if (!route.hasClientLoader) {
-        dataRoute.loader = (
-          { request }: LoaderFunctionArgs,
-          singleFetch?: unknown
-        ) =>
+        dataRoute.loader = (_: LoaderFunctionArgs, singleFetch?: unknown) =>
           prefetchStylesAndCallHandler(() => {
             if (isSpaMode) return Promise.resolve(null);
             return fetchServerLoader(singleFetch);
           });
       }
       if (!route.hasClientAction) {
-        dataRoute.action = (
-          { request }: ActionFunctionArgs,
-          singleFetch?: unknown
-        ) =>
+        dataRoute.action = (_: ActionFunctionArgs, singleFetch?: unknown) =>
           prefetchStylesAndCallHandler(() => {
             if (isSpaMode) {
               throw noActionDefinedError("clientAction", route.id);

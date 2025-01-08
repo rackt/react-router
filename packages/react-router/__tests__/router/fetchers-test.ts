@@ -329,6 +329,7 @@ describe("fetchers", () => {
         request: new Request("http://localhost/foo", {
           signal: A.loaders.root.stub.mock.calls[0][0].request.signal,
         }),
+        context: {},
       });
     });
   });
@@ -3226,6 +3227,7 @@ describe("fetchers", () => {
       expect(F.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = F.actions.root.stub.mock.calls[0][0].request;
@@ -3254,6 +3256,7 @@ describe("fetchers", () => {
       expect(F.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = F.actions.root.stub.mock.calls[0][0].request;
@@ -3280,6 +3283,7 @@ describe("fetchers", () => {
       expect(F.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = F.actions.root.stub.mock.calls[0][0].request;
@@ -3306,6 +3310,7 @@ describe("fetchers", () => {
       expect(F.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = F.actions.root.stub.mock.calls[0][0].request;
@@ -3333,6 +3338,7 @@ describe("fetchers", () => {
       expect(F.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = F.actions.root.stub.mock.calls[0][0].request;
@@ -3362,6 +3368,7 @@ describe("fetchers", () => {
       expect(F.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = F.actions.root.stub.mock.calls[0][0].request;
@@ -3390,6 +3397,7 @@ describe("fetchers", () => {
       expect(F.actions.root.stub).toHaveBeenCalledWith({
         params: {},
         request: expect.any(Request),
+        context: {},
       });
 
       let request = F.actions.root.stub.mock.calls[0][0].request;
