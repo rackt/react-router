@@ -4,11 +4,15 @@ import type {
 } from "../dom/ssr/routeModules";
 import type { DataWithResponseInit } from "../router/utils";
 import type { Serializable } from "../server-runtime/single-fetch";
+import type { SerializesTo } from "./route-module";
 import type { Equal, Expect, Func, IsAny, Pretty } from "./utils";
 
 // prettier-ignore
 type Serialize<T> =
-  // First, let type stay as-is if its already serializable...
+  // If type has a `SerializesTo` brand, use that type
+  T extends SerializesTo<infer To> ? To :
+
+  // Then, let type stay as-is if its already serializable...
   T extends Serializable ? T :
 
   // ...then don't allow functions to be serialized...
