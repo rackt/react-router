@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import type { ServerBuild } from "react-router";
-import { matchRoutes } from "react-router";
+import type * as rr from "react-router";
 import type { ModuleNode, ViteDevServer } from "vite";
 
 import type { ResolvedReactRouterConfig } from "../config/config";
@@ -224,6 +224,7 @@ export const getStylesForUrl = async ({
   cssModulesManifest,
   build,
   url,
+  matchRoutes,
 }: {
   viteDevServer: ViteDevServer;
   rootDirectory: string;
@@ -232,6 +233,7 @@ export const getStylesForUrl = async ({
   cssModulesManifest: Record<string, string>;
   build: ServerBuild;
   url: string | undefined;
+  matchRoutes: typeof rr.matchRoutes;
 }): Promise<string | undefined> => {
   if (url === undefined || url.includes("?_data=")) {
     return undefined;

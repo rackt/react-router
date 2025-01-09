@@ -6,11 +6,7 @@ import * as path from "node:path";
 import * as url from "node:url";
 import * as fse from "fs-extra";
 import * as babel from "@babel/core";
-import {
-  unstable_setDevServerHooks as setDevServerHooks,
-  createRequestHandler,
-  matchRoutes,
-} from "react-router";
+import type * as rr from "react-router";
 import type {
   RequestHandler,
   ServerBuild,
@@ -176,10 +172,11 @@ const resolveRelativeRouteFilePath = (
   return vite.normalizePath(fullPath);
 };
 
-let virtual = {
+export let virtual = {
   serverBuild: VirtualModule.create("server-build"),
   serverManifest: VirtualModule.create("server-manifest"),
   browserManifest: VirtualModule.create("browser-manifest"),
+  reactRouterReexport: VirtualModule.create("react-router-reexport"),
 };
 
 let invalidateVirtualModules = (viteDevServer: Vite.ViteDevServer) => {
@@ -1073,6 +1070,14 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
         }
       },
       async configureServer(viteDevServer) {
+        const {
+          unstable_setDevServerHooks: setDevServerHooks,
+          createRequestHandler,
+          matchRoutes,
+        } = (await viteDevServer.ssrLoadModule(
+          virtual.reactRouterReexport.id
+        )) as typeof rr;
+
         setDevServerHooks({
           // Give the request handler access to the critical CSS in dev to avoid a
           // flash of unstyled content since Vite injects CSS file contents via JS
@@ -1085,6 +1090,7 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
               cssModulesManifest,
               build,
               url,
+              matchRoutes,
             });
           },
           // If an error is caught within the request handler, let Vite fix the
@@ -1229,13 +1235,15 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
             ctx.reactRouterConfig.prerender != null &&
             ctx.reactRouterConfig.prerender !== false
           ) {
+            const { matchRoutes } = await import("react-router");
             // If we have prerender routes, that takes precedence over SPA mode
             // which is ssr:false and only the rot route being rendered
             await handlePrerender(
               viteConfig,
               ctx.reactRouterConfig,
               serverBuildDirectory,
-              clientBuildDirectory
+              clientBuildDirectory,
+              matchRoutes
             );
           }
 
@@ -1330,6 +1338,9 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
             });
 
             return `window.__reactRouterManifest=${reactRouterManifestString};`;
+          }
+          case virtual.reactRouterReexport.resolvedId: {
+            return `export * from "react-router";`;
           }
         }
       },
@@ -1853,7 +1864,8 @@ async function handlePrerender(
   viteConfig: Vite.ResolvedConfig,
   reactRouterConfig: ResolvedReactRouterConfig,
   serverBuildDirectory: string,
-  clientBuildDirectory: string
+  clientBuildDirectory: string,
+  matchRoutes: typeof rr.matchRoutes
 ) {
   let { build, handler } = await getPrerenderBuildAndHandler(
     viteConfig,
