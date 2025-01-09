@@ -631,8 +631,8 @@ export type Fetcher<TData = any> =
 
 interface BlockerBlocked {
   state: "blocked";
-  reset(): void;
-  proceed(): void;
+  reset: () => void;
+  proceed: () => void;
   location: Location;
 }
 
