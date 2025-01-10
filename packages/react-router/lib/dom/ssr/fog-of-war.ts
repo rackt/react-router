@@ -116,14 +116,23 @@ export function useFogOFWarDiscovery(
       if (!path) {
         return;
       }
-      let url = new URL(path, window.location.origin);
-      if (!discoveredPaths.has(url.pathname)) {
-        nextPaths.add(url.pathname);
+      // optimization: use the already-parsed pathname from links
+      let pathname =
+        el.tagName === 'A'
+          ? (el as HTMLAnchorElement).pathname
+          : new URL(path, window.location.origin).pathname;
+      if (!discoveredPaths.has(pathname)) {
+        nextPaths.add(pathname);
       }
     }
 
     // Register and fetch patches for all initially-rendered links/forms
     async function fetchPatches() {
+      // re-check/update registered links
+      document
+        .querySelectorAll("a[data-discover], form[data-discover]")
+        .forEach(registerElement);
+
       let lazyPaths = Array.from(nextPaths.keys()).filter((path) => {
         if (discoveredPaths.has(path)) {
           nextPaths.delete(path);
@@ -150,43 +159,14 @@ export function useFogOFWarDiscovery(
       }
     }
 
-    // Register and fetch patches for all initially-rendered links
-    document.body
-      .querySelectorAll("a[data-discover], form[data-discover]")
-      .forEach((el) => registerElement(el));
+    let debouncedFetchPatches = debounce(fetchPatches, 100);
 
+    // scan and fetch initial links
     fetchPatches();
 
     // Setup a MutationObserver to fetch all subsequently rendered links/form
-    let debouncedFetchPatches = debounce(fetchPatches, 100);
-
-    function isElement(node: Node): node is Element {
-      return node.nodeType === Node.ELEMENT_NODE;
-    }
-
-    let observer = new MutationObserver((records) => {
-      let elements = new Set<Element>();
-      records.forEach((r) => {
-        [r.target, ...r.addedNodes].forEach((node) => {
-          if (!isElement(node)) return;
-          if (node.tagName === "A" && node.getAttribute("data-discover")) {
-            elements.add(node);
-          } else if (
-            node.tagName === "FORM" &&
-            node.getAttribute("data-discover")
-          ) {
-            elements.add(node);
-          }
-          if (node.tagName !== "A") {
-            node
-              .querySelectorAll("a[data-discover], form[data-discover]")
-              .forEach((el) => elements.add(el));
-          }
-        });
-      });
-      elements.forEach((el) => registerElement(el));
-      debouncedFetchPatches();
-    });
+    // It just schedules a full scan since that's faster than checking subtrees
+    let observer = new MutationObserver(debouncedFetchPatches);
 
     observer.observe(document.documentElement, {
       subtree: true,
