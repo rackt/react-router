@@ -24,17 +24,14 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "node": {
-        "types": "./dist/index.d.ts",
-        "module-sync": "./dist/index.mjs",
-        "default": "./dist/index.js"
-      },
       "import": {
         "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
       },
       "default": {
         "types": "./dist/index.d.ts",
+        "module-sync": "./dist/index.mjs",
+        "module": "./dist/index.mjs",
         "default": "./dist/index.js"
       }
     },

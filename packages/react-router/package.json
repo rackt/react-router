@@ -23,17 +23,14 @@
   "module": "./dist/development/index.mjs",
   "exports": {
     ".": {
-      "node": {
-        "types": "./dist/development/index.d.ts",
-        "module-sync": "./dist/development/index.mjs",
-        "default": "./dist/development/index.js"
-      },
       "import": {
         "types": "./dist/development/index.d.mts",
         "default": "./dist/development/index.mjs"
       },
       "default": {
         "types": "./dist/development/index.d.ts",
+        "module-sync": "./dist/development/index.mjs",
+        "module": "./dist/development/index.mjs",
         "default": "./dist/development/index.js"
       }
     },
@@ -46,17 +43,14 @@
       }
     },
     "./dom": {
-      "node": {
-        "types": "./dist/development/dom-export.d.ts",
-        "module-sync": "./dist/development/dom-export.mjs",
-        "default": "./dist/development/dom-export.js"
-      },
       "import": {
         "types": "./dist/development/dom-export.d.mts",
         "default": "./dist/development/dom-export.mjs"
       },
       "default": {
         "types": "./dist/development/dom-export.d.ts",
+        "module-sync": "./dist/development/dom-export.mjs",
+        "module": "./dist/development/dom-export.mjs",
         "default": "./dist/development/dom-export.js"
       }
     },

@@ -15,32 +15,26 @@
   "main": "dist/index.js",
   "exports": {
     ".": {
-      "node": {
-        "types": "./dist/index.d.ts",
-        "module-sync": "./dist/index.mjs",
-        "default": "./dist/index.js"
-      },
       "import": {
         "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
       },
       "default": {
         "types": "./dist/index.d.ts",
+        "module-sync": "./dist/index.mjs",
+        "module": "./dist/index.mjs",
         "default": "./dist/index.js"
       }
     },
     "./install": {
-      "node": {
-        "types": "./dist/install.d.ts",
-        "module-sync": "./dist/install.mjs",
-        "default": "./dist/install.js"
-      },
       "import": {
         "types": "./dist/install.d.mts",
         "default": "./dist/install.mjs"
       },
       "default": {
         "types": "./dist/install.d.ts",
+        "module-sync": "./dist/install.mjs",
+        "module": "./dist/install.mjs",
         "default": "./dist/install.js"
       }
     },
