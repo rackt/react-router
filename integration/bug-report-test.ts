@@ -7,6 +7,7 @@ import {
   createFixture,
   js,
 } from "./helpers/create-fixture.js";
+import { build, createProject, reactRouterConfig } from "./helpers/vite.js";
 
 let fixture: Fixture;
 let appFixture: AppFixture;
@@ -34,13 +35,13 @@ let appFixture: AppFixture;
 // Now try running this test:
 //
 //    ```
-//    pnpm bug-report-test
+//    pnpm test:integration integration/bug-report-test.ts
 //    ```
 //
-// You can add `--watch` to the end to have it re-run on file changes:
+// You can add `--ui` to the end to explore, watch, and debug the test:
 //
 //    ```
-//    pnpm bug-report-test --watch
+//    pnpm test:integration integration/bug-report-test.ts --ui
 //    ```
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -51,68 +52,28 @@ test.beforeEach(async ({ context }) => {
   });
 });
 
-test.beforeAll(async () => {
-  fixture = await createFixture({
-    ////////////////////////////////////////////////////////////////////////////
-    // 💿 Next, add files to this object, just like files in a real app,
-    // `createFixture` will make an app and run your tests against it.
-    ////////////////////////////////////////////////////////////////////////////
-    files: {
-      "app/routes/_index.tsx": js`
-        import { useLoaderData, Link } from "react-router";
-
-        export function loader() {
-          return "pizza";
-        }
-
-        export default function Index() {
-          let data = useLoaderData();
-          return (
-            <div>
-              {data}
-              <Link to="/burgers">Other Route</Link>
-            </div>
-          )
-        }
-      `,
-
-      "app/routes/burgers.tsx": js`
-        export default function Index() {
-          return <div>cheeseburger</div>;
-        }
-      `,
-    },
-  });
-
-  // This creates an interactive app using playwright.
-  appFixture = await createAppFixture(fixture);
-});
-
-test.afterAll(() => {
-  appFixture.close();
-});
-
 ////////////////////////////////////////////////////////////////////////////////
 // 💿 Almost done, now write your failing test case(s) down here Make sure to
 // add a good description for what you expect Remix to do 👇🏽
 ////////////////////////////////////////////////////////////////////////////////
 
-test("[description of what you expect it to do]", async ({ page }) => {
-  let app = new PlaywrightFixture(appFixture, page);
-  // You can test any request your app might get using `fixture`.
-  let response = await fixture.requestDocument("/");
-  expect(await response.text()).toMatch("pizza");
-
-  // If you need to test interactivity use the `app`
-  await app.goto("/");
-  await app.clickLink("/burgers");
-  await page.waitForSelector("text=cheeseburger");
-
-  // If you're not sure what's going on, you can "poke" the app, it'll
-  // automatically open up in your browser for 20 seconds, so be quick!
-  // await app.poke(20);
-
-  // Go check out the other tests to see what else you can do.
+test("allows route loader for pre-rendered routes in SPA mode", async () => {
+  const cwd = await createProject({
+    "react-router.config.ts": reactRouterConfig({
+      prerender: true,
+      ssr: false,
+    }),
+    "app/routes/invalid-exports.tsx": String.raw`
+    // Valid exports
+    export function loader() {}
+    export function clientLoader() {}
+    export function clientAction() {}
+    export default function Component() {}
+  `,
+  });
+  const result = build({ cwd });
+  const stderr = result.stderr.toString("utf8");
+  expect(stderr).toBe("");
 });
 
 ////////////////////////////////////////////////////////////////////////////////
