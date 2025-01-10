@@ -1184,6 +1184,83 @@ importers:
         specifier: ^4.2.1
         version: 4.3.2(typescript@5.4.5)(vite@6.0.2(@types/node@20.11.30)(jiti@1.21.0)(yaml@2.6.0))
 
+  playground/route-chunks:
+    dependencies:
+      '@react-router/node':
+        specifier: workspace:*
+        version: link:../../packages/react-router-node
+      '@react-router/serve':
+        specifier: workspace:*
+        version: link:../../packages/react-router-serve
+      isbot:
+        specifier: ^5.1.11
+        version: 5.1.11
+      react:
+        specifier: ^18.2.0
+        version: 18.2.0
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.2.0(react@18.2.0)
+      react-router:
+        specifier: workspace:*
+        version: link:../../packages/react-router
+    devDependencies:
+      '@react-router/dev':
+        specifier: workspace:*
+        version: link:../../packages/react-router-dev
+      '@types/react':
+        specifier: ^18.2.18
+        version: 18.2.18
+      '@types/react-dom':
+        specifier: ^18.2.7
+        version: 18.2.7
+      typescript:
+        specifier: ^5.1.6
+        version: 5.4.5
+      vite:
+        specifier: ^6.0.0
+        version: 6.0.2(@types/node@20.11.30)(jiti@1.21.0)(yaml@2.6.0)
+      vite-tsconfig-paths:
+        specifier: ^4.2.1
+        version: 4.3.2(typescript@5.4.5)(vite@6.0.2(@types/node@20.11.30)(jiti@1.21.0)(yaml@2.6.0))
+
+  playground/route-chunks-spa:
+    dependencies:
+      '@react-router/node':
+        specifier: workspace:*
+        version: link:../../packages/react-router-node
+      isbot:
+        specifier: ^5
+        version: 5.1.11
+      react:
+        specifier: ^18.2.0
+        version: 18.2.0
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.2.0(react@18.2.0)
+      react-router:
+        specifier: workspace:*
+        version: link:../../packages/react-router
+    devDependencies:
+      '@react-router/dev':
+        specifier: workspace:*
+        version: link:../../packages/react-router-dev
+      '@types/react':
+        specifier: ^18.2.18
+        version: 18.2.18
+      '@types/react-dom':
+        specifier: ^18.2.7
+        version: 18.2.7
+      typescript:
+        specifier: ^5.1.6
+        version: 5.4.5
+      vite:
+        specifier: ^6.0.0
+        version: 6.0.2(@types/node@20.11.30)(jiti@1.21.0)(yaml@2.6.0)
+      vite-tsconfig-paths:
+        specifier: ^4.2.1
+        version: 4.3.2(typescript@5.4.5)(vite@6.0.2(@types/node@20.11.30)(jiti@1.21.0)(yaml@2.6.0))
+
 packages:
 
   '@aashutoshrathi/word-wrap@1.2.6':

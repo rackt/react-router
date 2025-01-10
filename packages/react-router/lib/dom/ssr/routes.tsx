@@ -36,6 +36,9 @@ export interface EntryRoute extends Route {
   imports?: string[];
   css?: string[];
   module: string;
+  clientActionModule: string | undefined;
+  clientLoaderModule: string | undefined;
+  hydrateFallbackModule: string | undefined;
   parentId?: string;
 }
 
@@ -400,6 +403,23 @@ export function createClientRoutes(
             if (isSpaMode) return Promise.resolve(null);
             return fetchServerLoader(singleFetch);
           });
+      } else if (route.clientLoaderModule) {
+        dataRoute.loader = async (
+          args: LoaderFunctionArgs,
+          singleFetch?: unknown
+        ) => {
+          invariant(route.clientLoaderModule);
+          let { clientLoader } = await import(
+            /* webpackIgnore: true */ route.clientLoaderModule
+          );
+          return clientLoader({
+            ...args,
+            async serverLoader() {
+              preventInvalidServerHandlerCall("loader", route, isSpaMode);
+              return fetchServerLoader(singleFetch);
+            },
+          });
+        };
       }
       if (!route.hasClientAction) {
         dataRoute.action = (
@@ -412,17 +432,44 @@ export function createClientRoutes(
             }
             return fetchServerAction(singleFetch);
           });
+      } else if (route.clientActionModule) {
+        dataRoute.action = async (
+          args: ActionFunctionArgs,
+          singleFetch?: unknown
+        ) => {
+          invariant(route.clientActionModule);
+          let { clientAction } = await import(
+            /* webpackIgnore: true */ route.clientActionModule
+          );
+          return clientAction({
+            ...args,
+            async serverAction() {
+              preventInvalidServerHandlerCall("action", route, isSpaMode);
+              return fetchServerAction(singleFetch);
+            },
+          });
+        };
       }
 
       // Load all other modules via route.lazy()
       dataRoute.lazy = async () => {
+        if (route.clientLoaderModule || route.clientActionModule) {
+          // If a client loader/action chunk is present, we push the loading of
+          // the main route chunk to the next tick to ensure the downloading of
+          // loader/action chunks takes precedence. This can be seen via their
+          // order in the network tab. Also note that since this is happening
+          // within `route.lazy`, this imperceptible delay only happens on the
+          // first load of this route.
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+
         let mod = await loadRouteModuleWithBlockingLinks(
           route,
           routeModulesCache
         );
 
         let lazyRoute: Partial<DataRouteObject> = { ...mod };
-        if (mod.clientLoader) {
+        if (mod.clientLoader && !route.clientLoaderModule) {
           let clientLoader = mod.clientLoader;
           lazyRoute.loader = (
             args: LoaderFunctionArgs,
@@ -437,7 +484,7 @@ export function createClientRoutes(
             });
         }
 
-        if (mod.clientAction) {
+        if (mod.clientAction && !route.clientActionModule) {
           let clientAction = mod.clientAction;
           lazyRoute.action = (
             args: ActionFunctionArgs,

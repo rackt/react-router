@@ -25,8 +25,12 @@ import colors from "picocolors";
 
 import * as Typegen from "../typegen";
 import { type RouteManifestEntry, type RouteManifest } from "../config/routes";
-import type { Manifest as ReactRouterManifest } from "../manifest";
+import type {
+  ManifestRoute,
+  Manifest as ReactRouterManifest,
+} from "../manifest";
 import invariant from "../invariant";
+import type { Cache } from "./cache";
 import { generate, parse } from "./babel";
 import type { NodeRequestHandler } from "./node-adapter";
 import { fromNodeRequest, toNodeRequest } from "./node-adapter";
@@ -35,6 +39,17 @@ import * as VirtualModule from "./virtual-module";
 import { resolveFileUrl } from "./resolve-file-url";
 import { combineURLs } from "./combine-urls";
 import { removeExports } from "./remove-exports";
+import {
+  type RouteChunkName,
+  type RouteChunkExportName,
+  routeChunkNames,
+  routeChunkExportNames,
+  detectRouteChunks,
+  getRouteChunkCode,
+  isRouteChunkModuleId,
+  getRouteChunkModuleId,
+  getRouteChunkNameFromModuleId,
+} from "./route-chunks";
 import { preloadVite, getVite } from "./vite";
 import {
   type ResolvedReactRouterConfig,
@@ -136,6 +151,14 @@ exports are only ever used on the server. Without this optimization we can't
 tree-shake any unused custom exports because routes are entry points. */
 const BUILD_CLIENT_ROUTE_QUERY_STRING = "?__react-router-build-client-route";
 
+const isRouteEntryModuleId = (id: string): boolean => {
+  return id.endsWith(BUILD_CLIENT_ROUTE_QUERY_STRING);
+};
+
+const isRouteVirtualModule = (id: string): boolean => {
+  return isRouteEntryModuleId(id) || isRouteChunkModuleId(id);
+};
+
 export type ServerBundleBuildConfig = {
   routes: RouteManifest;
   serverBundleId: string;
@@ -164,6 +187,17 @@ export type ReactRouterPluginContext = ReactRouterPluginSsrBuildContext & {
 
 let virtualHmrRuntime = VirtualModule.create("hmr-runtime");
 let virtualInjectHmrRuntime = VirtualModule.create("inject-hmr-runtime");
+
+const normalizeRelativeFilePath = (
+  file: string,
+  reactRouterConfig: ResolvedReactRouterConfig
+) => {
+  let vite = getVite();
+  let fullPath = path.resolve(reactRouterConfig.appDirectory, file);
+  let relativePath = path.relative(reactRouterConfig.appDirectory, fullPath);
+
+  return vite.normalizePath(relativePath).split("?")[0];
+};
 
 const resolveRelativeRouteFilePath = (
   route: RouteManifestEntry,
@@ -205,20 +239,22 @@ const resolveChunk = (
   let rootRelativeFilePath = vite.normalizePath(
     path.relative(ctx.rootDirectory, absoluteFilePath)
   );
-  let entryChunk =
-    viteManifest[rootRelativeFilePath + BUILD_CLIENT_ROUTE_QUERY_STRING] ??
-    viteManifest[rootRelativeFilePath];
+  let entryChunk = viteManifest[rootRelativeFilePath];
 
   if (!entryChunk) {
-    let knownManifestKeys = Object.keys(viteManifest)
-      .map((key) => '"' + key + '"')
-      .join(", ");
-    throw new Error(
-      `No manifest entry found for "${rootRelativeFilePath}". Known manifest keys: ${knownManifestKeys}`
-    );
+    return undefined;
   }
 
   return entryChunk;
+};
+
+const getPublicModulePathForEntry = (
+  ctx: ReactRouterPluginContext,
+  viteManifest: Vite.Manifest,
+  entryFilePath: string
+): string | undefined => {
+  let entryChunk = resolveChunk(ctx, viteManifest, entryFilePath);
+  return entryChunk ? `${ctx.publicPath}${entryChunk.file}` : undefined;
 };
 
 const getReactRouterManifestBuildAssets = (
@@ -228,15 +264,29 @@ const getReactRouterManifestBuildAssets = (
   prependedAssetFilePaths: string[] = []
 ): ReactRouterManifest["entry"] & { css: string[] } => {
   let entryChunk = resolveChunk(ctx, viteManifest, entryFilePath);
+  invariant(entryChunk, "Chunk not found");
 
   // This is here to support prepending client entry assets to the root route
-  let prependedAssetChunks = prependedAssetFilePaths.map((filePath) =>
-    resolveChunk(ctx, viteManifest, filePath)
-  );
+  let prependedAssetChunks = prependedAssetFilePaths.map((filePath) => {
+    let chunk = resolveChunk(ctx, viteManifest, filePath);
+    invariant(chunk, "Chunk not found");
+    return chunk;
+  });
+
+  let routeModuleChunks = routeChunkNames
+    .map((routeChunkName) =>
+      resolveChunk(
+        ctx,
+        viteManifest,
+        getRouteChunkModuleId(entryFilePath.split("?")[0], routeChunkName)
+      )
+    )
+    .filter(isNonNullable);
 
   let chunks = resolveDependantChunks(viteManifest, [
     ...prependedAssetChunks,
     entryChunk,
+    ...routeModuleChunks,
   ]);
 
   return {
@@ -288,6 +338,11 @@ const writeFileSafe = async (file: string, contents: string): Promise<void> => {
   await fse.writeFile(file, contents);
 };
 
+const getExportNames = (code: string): string[] => {
+  let [, exportSpecifiers] = esModuleLexer(code);
+  return exportSpecifiers.map(({ n: name }) => name);
+};
+
 const getRouteManifestModuleExports = async (
   viteChildCompiler: Vite.ViteDevServer | null,
   ctx: ReactRouterPluginContext
@@ -305,12 +360,12 @@ const getRouteManifestModuleExports = async (
   return Object.fromEntries(entries);
 };
 
-const getRouteModuleExports = async (
+const compileRouteFile = async (
   viteChildCompiler: Vite.ViteDevServer | null,
   ctx: ReactRouterPluginContext,
   routeFile: string,
   readRouteFile?: () => string | Promise<string>
-): Promise<string[]> => {
+): Promise<string> => {
   if (!viteChildCompiler) {
     throw new Error("Vite child compiler not found");
   }
@@ -340,10 +395,27 @@ const getRouteModuleExports = async (
   ]);
 
   let transformed = await pluginContainer.transform(code, id, { ssr });
-  let [, exports] = esModuleLexer(transformed.code);
-  let exportNames = exports.map((e) => e.n);
+  return transformed.code;
+};
 
-  return exportNames;
+const getRouteModuleExports = async (
+  viteChildCompiler: Vite.ViteDevServer | null,
+  ctx: ReactRouterPluginContext,
+  routeFile: string,
+  readRouteFile?: () => string | Promise<string>
+): Promise<string[]> => {
+  if (!viteChildCompiler) {
+    throw new Error("Vite child compiler not found");
+  }
+
+  let code = await compileRouteFile(
+    viteChildCompiler,
+    ctx,
+    routeFile,
+    readRouteFile
+  );
+
+  return getExportNames(code);
 };
 
 const getServerBundleBuildConfig = (
@@ -406,6 +478,8 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
   let viteConfig: Vite.ResolvedConfig | undefined;
   let cssModulesManifest: Record<string, string> = {};
   let viteChildCompiler: Vite.ViteDevServer | null = null;
+  let cache: Cache = new Map();
+
   let reactRouterConfigLoader: ConfigLoader;
   let typegenWatcherPromise: Promise<Typegen.Watcher> | undefined;
   let logger: Vite.Logger;
@@ -600,15 +674,40 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
       ctx
     );
 
+    let enforceRouteChunks =
+      ctx.reactRouterConfig.future.unstable_routeChunks === "enforce";
+
     for (let [key, route] of Object.entries(ctx.reactRouterConfig.routes)) {
-      let routeFilePath = path.join(
-        ctx.reactRouterConfig.appDirectory,
-        route.file
-      );
+      let routeFile = path.join(ctx.reactRouterConfig.appDirectory, route.file);
       let sourceExports = routeManifestExports[key];
       let isRootRoute = route.parentId === undefined;
+      let hasClientAction = sourceExports.includes("clientAction");
+      let hasClientLoader = sourceExports.includes("clientLoader");
+      let hasHydrateFallback = sourceExports.includes("HydrateFallback");
 
-      let routeManifestEntry = {
+      let { hasRouteChunkByExportName } = await detectRouteChunksIfEnabled(
+        cache,
+        ctx,
+        routeFile,
+        { routeFile, viteChildCompiler }
+      );
+
+      if (enforceRouteChunks) {
+        validateRouteChunks({
+          ctx,
+          id: route.file,
+          valid: {
+            clientAction:
+              !hasClientAction || hasRouteChunkByExportName.clientAction,
+            clientLoader:
+              !hasClientLoader || hasRouteChunkByExportName.clientLoader,
+            HydrateFallback:
+              !hasHydrateFallback || hasRouteChunkByExportName.HydrateFallback,
+          },
+        });
+      }
+
+      let routeManifestEntry: ReactRouterManifest["routes"][string] = {
         id: route.id,
         parentId: route.parentId,
         path: route.path,
@@ -616,18 +715,39 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
         caseSensitive: route.caseSensitive,
         hasAction: sourceExports.includes("action"),
         hasLoader: sourceExports.includes("loader"),
-        hasClientAction: sourceExports.includes("clientAction"),
-        hasClientLoader: sourceExports.includes("clientLoader"),
+        hasClientAction,
+        hasClientLoader,
         hasErrorBoundary: sourceExports.includes("ErrorBoundary"),
         ...getReactRouterManifestBuildAssets(
           ctx,
           viteManifest,
-          routeFilePath,
+          `${routeFile}${BUILD_CLIENT_ROUTE_QUERY_STRING}`,
           // If this is the root route, we also need to include assets from the
           // client entry file as this is a common way for consumers to import
           // global reset styles, etc.
           isRootRoute ? [ctx.entryClientFilePath] : []
         ),
+        clientActionModule: hasRouteChunkByExportName.clientAction
+          ? getPublicModulePathForEntry(
+              ctx,
+              viteManifest,
+              getRouteChunkModuleId(routeFile, "clientAction")
+            )
+          : undefined,
+        clientLoaderModule: hasRouteChunkByExportName.clientLoader
+          ? getPublicModulePathForEntry(
+              ctx,
+              viteManifest,
+              getRouteChunkModuleId(routeFile, "clientLoader")
+            )
+          : undefined,
+        hydrateFallbackModule: hasRouteChunkByExportName.HydrateFallback
+          ? getPublicModulePathForEntry(
+              ctx,
+              viteManifest,
+              getRouteChunkModuleId(routeFile, "HydrateFallback")
+            )
+          : undefined,
       };
 
       browserRoutes[key] = routeManifestEntry;
@@ -683,25 +803,60 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
       ctx
     );
 
+    let enforceRouteChunks =
+      ctx.reactRouterConfig.future.unstable_routeChunks === "enforce";
+
     for (let [key, route] of Object.entries(ctx.reactRouterConfig.routes)) {
+      let routeFile = route.file;
       let sourceExports = routeManifestExports[key];
+      let hasClientAction = sourceExports.includes("clientAction");
+      let hasClientLoader = sourceExports.includes("clientLoader");
+      let hasHydrateFallback = sourceExports.includes("HydrateFallback");
+      let routeModulePath = combineURLs(
+        ctx.publicPath,
+        `${resolveFileUrl(
+          ctx,
+          resolveRelativeRouteFilePath(route, ctx.reactRouterConfig)
+        )}`
+      );
+
+      if (enforceRouteChunks) {
+        let { hasRouteChunkByExportName } = await detectRouteChunksIfEnabled(
+          cache,
+          ctx,
+          routeFile,
+          { routeFile, viteChildCompiler }
+        );
+
+        validateRouteChunks({
+          ctx,
+          id: route.file,
+          valid: {
+            clientAction:
+              !hasClientAction || hasRouteChunkByExportName.clientAction,
+            clientLoader:
+              !hasClientLoader || hasRouteChunkByExportName.clientLoader,
+            HydrateFallback:
+              !hasHydrateFallback || hasRouteChunkByExportName.HydrateFallback,
+          },
+        });
+      }
+
       routes[key] = {
         id: route.id,
         parentId: route.parentId,
         path: route.path,
         index: route.index,
         caseSensitive: route.caseSensitive,
-        module: combineURLs(
-          ctx.publicPath,
-          resolveFileUrl(
-            ctx,
-            resolveRelativeRouteFilePath(route, ctx.reactRouterConfig)
-          )
-        ),
+        module: routeModulePath,
+        // Route chunks are a build-time optimization
+        clientActionModule: undefined,
+        clientLoaderModule: undefined,
+        hydrateFallbackModule: undefined,
         hasAction: sourceExports.includes("action"),
         hasLoader: sourceExports.includes("loader"),
-        hasClientAction: sourceExports.includes("clientAction"),
-        hasClientLoader: sourceExports.includes("clientLoader"),
+        hasClientAction,
+        hasClientLoader,
         hasErrorBoundary: sourceExports.includes("ErrorBoundary"),
         imports: [],
       };
@@ -903,13 +1058,37 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
                           preserveEntrySignatures: "exports-only",
                           input: [
                             ctx.entryClientFilePath,
-                            ...Object.values(ctx.reactRouterConfig.routes).map(
-                              (route) =>
-                                `${path.resolve(
-                                  ctx.reactRouterConfig.appDirectory,
-                                  route.file
-                                )}${BUILD_CLIENT_ROUTE_QUERY_STRING}`
-                            ),
+                            ...Object.values(
+                              ctx.reactRouterConfig.routes
+                            ).flatMap((route) => {
+                              let routeFilePath = path.resolve(
+                                ctx.reactRouterConfig.appDirectory,
+                                route.file
+                              );
+
+                              let isRootRoute =
+                                route.file ===
+                                ctx.reactRouterConfig.routes.root.file;
+
+                              let code = fse.readFileSync(
+                                routeFilePath,
+                                "utf-8"
+                              );
+
+                              return [
+                                `${routeFilePath}${BUILD_CLIENT_ROUTE_QUERY_STRING}`,
+                                ...(!isRootRoute
+                                  ? routeChunkExportNames.map((exportName) =>
+                                      code.includes(exportName)
+                                        ? getRouteChunkModuleId(
+                                            routeFilePath,
+                                            exportName
+                                          )
+                                        : null
+                                    )
+                                  : []),
+                              ].filter(isNonNullable);
+                            }),
                           ],
                         },
                       }
@@ -1273,9 +1452,81 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
       },
     },
     {
+      name: "react-router:route-chunks-index",
+      // This plugin provides the route module "index" since route modules can
+      // be chunked and may be made up of multiple smaller modules. This plugin
+      // primarily ensures code is never duplicated across a route module and
+      // its chunks. If we didn't have this plugin, any app that explicitly
+      // imports a route module would result in duplicate code since the app
+      // would contain code for both the unprocessed route module as well as its
+      // individual chunks. This is because, since they have different module
+      // IDs, they are treated as completely separate modules even though they
+      // all reference the same underlying file. This plugin addresses this by
+      // ensuring that any explicit imports of a route module resolve to a
+      // module that simply re-exports from its underlying chunks, if present.
+      async transform(code, id, options) {
+        // Routes are only chunked in build mode
+        if (viteCommand !== "build") return;
+
+        // Routes aren't chunked on the server
+        if (options?.ssr) {
+          return;
+        }
+
+        // Ensure we're only operating on routes
+        if (!isRoute(ctx.reactRouterConfig, id)) {
+          return;
+        }
+
+        // Ensure we're only operating on raw route module imports
+        if (isRouteVirtualModule(id)) {
+          return;
+        }
+
+        let { hasRouteChunks, chunkedExports } =
+          await detectRouteChunksIfEnabled(cache, ctx, id, code);
+
+        // If there are no chunks, we can let this resolve to the raw route
+        // module since there's no risk of duplication
+        if (!hasRouteChunks) {
+          return;
+        }
+
+        let sourceExports = await getRouteModuleExports(
+          viteChildCompiler,
+          ctx,
+          id
+        );
+
+        let isMainChunkExport = (name: string) =>
+          !chunkedExports.includes(name as string & RouteChunkExportName);
+
+        let mainChunkReexports = sourceExports
+          .filter(isMainChunkExport)
+          .join(", ");
+
+        let chunkBasePath = `./${path.basename(id)}`;
+
+        return [
+          `export { ${mainChunkReexports} } from "${getRouteChunkModuleId(
+            chunkBasePath,
+            "main"
+          )}";`,
+          ...chunkedExports.map(
+            (exportName) =>
+              `export { ${exportName} } from "${getRouteChunkModuleId(
+                chunkBasePath,
+                exportName
+              )}";`
+          ),
+        ]
+          .filter(Boolean)
+          .join("\n");
+      },
+    },
+    {
       name: "react-router:build-client-route",
-      enforce: "pre",
-      async transform(_code, id, options) {
+      async transform(code, id, options) {
         if (!id.endsWith(BUILD_CLIENT_ROUTE_QUERY_STRING)) return;
         let routeModuleId = id.replace(BUILD_CLIENT_ROUTE_QUERY_STRING, "");
 
@@ -1287,15 +1538,78 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
           routeModuleId
         );
 
+        let { chunkedExports = [] } = options?.ssr
+          ? {}
+          : await detectRouteChunksIfEnabled(cache, ctx, id, code);
+
         let reexports = sourceExports
-          .filter(
-            (exportName) =>
+          .filter((exportName) => {
+            let isRouteEntryExport =
               (options?.ssr &&
                 SERVER_ONLY_ROUTE_EXPORTS.includes(exportName)) ||
-              CLIENT_ROUTE_EXPORTS.includes(exportName)
-          )
+              CLIENT_ROUTE_EXPORTS.includes(exportName);
+
+            let isChunkedExport = chunkedExports.includes(
+              exportName as string & RouteChunkExportName
+            );
+
+            return isRouteEntryExport && !isChunkedExport;
+          })
           .join(", ");
+
         return `export { ${reexports} } from "./${routeFileName}";`;
+      },
+    },
+    {
+      name: "react-router:route-chunks",
+      async transform(code, id, options) {
+        // Routes aren't chunked on the server
+        if (options?.ssr) return;
+
+        // Ignore anything that isn't marked as a route chunk
+        if (!isRouteChunkModuleId(id)) return;
+
+        let chunkName = getRouteChunkNameFromModuleId(id);
+
+        if (!chunkName) {
+          throw new Error(`Invalid route chunk name "${chunkName}" in "${id}"`);
+        }
+
+        let chunk = await getRouteChunkIfEnabled(
+          cache,
+          ctx,
+          id,
+          chunkName,
+          code
+        );
+
+        let preventEmptyChunkSnippet = ({ reason }: { reason: string }) =>
+          `Math.random()<0&&console.log(${JSON.stringify(reason)});`;
+
+        if (chunk === null) {
+          return preventEmptyChunkSnippet({ reason: "Route chunks disabled" });
+        }
+
+        let enforceRouteChunks =
+          ctx.reactRouterConfig.future.unstable_routeChunks === "enforce";
+
+        if (enforceRouteChunks && chunkName === "main" && chunk) {
+          let exportNames = getExportNames(chunk.code);
+
+          validateRouteChunks({
+            ctx,
+            id,
+            valid: {
+              clientAction: !exportNames.includes("clientAction"),
+              clientLoader: !exportNames.includes("clientLoader"),
+              HydrateFallback: !exportNames.includes("HydrateFallback"),
+            },
+          });
+        }
+
+        return (
+          chunk ?? preventEmptyChunkSnippet({ reason: `No ${chunkName} chunk` })
+        );
       },
     },
     {
@@ -1369,9 +1683,7 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
         let importerShort = vite.normalizePath(
           path.relative(ctx.rootDirectory, importer)
         );
-        let isRoute = getRoute(ctx.reactRouterConfig, importer);
-
-        if (isRoute) {
+        if (isRoute(ctx.reactRouterConfig, importer)) {
           let serverOnlyExports = SERVER_ONLY_ROUTE_EXPORTS.map(
             (xport) => `\`${xport}\``
           ).join(", ");
@@ -1411,10 +1723,10 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
         let clientFileRE = /\.client(\.[cm]?[jt]sx?)?$/;
         let clientDirRE = /\/\.client\//;
         if (clientFileRE.test(id) || clientDirRE.test(id)) {
-          let exports = esModuleLexer(code)[1];
+          let exports = getExportNames(code);
           return {
             code: exports
-              .map(({ n: name }) =>
+              .map((name) =>
                 name === "default"
                   ? "export default undefined;"
                   : `export const ${name} = undefined;`
@@ -1433,9 +1745,10 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
         if (!route) return;
 
         if (!options?.ssr && !ctx.reactRouterConfig.ssr) {
-          let serverOnlyExports = esModuleLexer(code)[1]
-            .map((exp) => exp.n)
-            .filter((exp) => SERVER_ONLY_ROUTE_EXPORTS.includes(exp));
+          let exportNames = getExportNames(code);
+          let serverOnlyExports = exportNames.filter((exp) =>
+            SERVER_ONLY_ROUTE_EXPORTS.includes(exp)
+          );
           if (serverOnlyExports.length > 0) {
             let str = serverOnlyExports.map((e) => `\`${e}\``).join(", ");
             let message =
@@ -1446,9 +1759,9 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
           }
 
           if (route.id !== "root") {
-            let hasHydrateFallback = esModuleLexer(code)[1]
-              .map((exp) => exp.n)
-              .some((exp) => exp === "HydrateFallback");
+            let hasHydrateFallback = exportNames.some(
+              (exp) => exp === "HydrateFallback"
+            );
             if (hasHydrateFallback) {
               let message =
                 `SPA Mode: Invalid \`HydrateFallback\` export found in ` +
@@ -1538,6 +1851,10 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
         let useFastRefresh = !ssr && (isJSX || code.includes(devRuntime));
         if (!useFastRefresh) return;
 
+        if (isRouteVirtualModule(id)) {
+          return { code: addRefreshWrapper(ctx.reactRouterConfig, code, id) };
+        }
+
         let result = await babel.transformAsync(code, {
           babelrc: false,
           configFile: false,
@@ -1565,7 +1882,6 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
       async handleHotUpdate({ server, file, modules, read }) {
         let route = getRoute(ctx.reactRouterConfig, file);
 
-        type ManifestRoute = ReactRouterManifest["routes"][string];
         type HmrEventData = { route: ManifestRoute | null };
         let hmrEventData: HmrEventData = { route: null };
 
@@ -1577,6 +1893,7 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
 
           let oldRouteMetadata = serverManifest.routes[route.id];
           let newRouteMetadata = await getRouteMetadata(
+            cache,
             ctx,
             viteChildCompiler,
             route,
@@ -1591,9 +1908,12 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
               [
                 "hasLoader",
                 "hasClientLoader",
+                "clientLoaderModule",
                 "hasAction",
                 "hasClientAction",
+                "clientActionModule",
                 "hasErrorBoundary",
+                "hydrateFallbackModule",
               ] as const
             ).some((key) => oldRouteMetadata[key] !== newRouteMetadata[key])
           ) {
@@ -1760,12 +2080,21 @@ function getRoute(
   return route;
 }
 
+function isRoute(
+  pluginConfig: ResolvedReactRouterConfig,
+  file: string
+): boolean {
+  return Boolean(getRoute(pluginConfig, file));
+}
+
 async function getRouteMetadata(
+  cache: Cache,
   ctx: ReactRouterPluginContext,
   viteChildCompiler: Vite.ViteDevServer | null,
   route: RouteManifestEntry,
   readRouteFile?: () => string | Promise<string>
-) {
+): Promise<ManifestRoute & { url: string }> {
+  let routeFile = route.file;
   let sourceExports = await getRouteModuleExports(
     viteChildCompiler,
     ctx,
@@ -1773,7 +2102,22 @@ async function getRouteMetadata(
     readRouteFile
   );
 
-  let info = {
+  let { hasRouteChunkByExportName } = await detectRouteChunksIfEnabled(
+    cache,
+    ctx,
+    routeFile,
+    { routeFile, readRouteFile, viteChildCompiler }
+  );
+
+  let moduleUrl = combineURLs(
+    ctx.publicPath,
+    `${resolveFileUrl(
+      ctx,
+      resolveRelativeRouteFilePath(route, ctx.reactRouterConfig)
+    )}`
+  );
+
+  let info: ManifestRoute & { url: string } = {
     id: route.id,
     parentId: route.parentId,
     path: route.path,
@@ -1787,13 +2131,16 @@ async function getRouteMetadata(
           resolveRelativeRouteFilePath(route, ctx.reactRouterConfig)
         )
     ),
-    module: combineURLs(
-      ctx.publicPath,
-      `${resolveFileUrl(
-        ctx,
-        resolveRelativeRouteFilePath(route, ctx.reactRouterConfig)
-      )}?import`
-    ), // Ensure the Vite dev server responds with a JS module
+    module: `${moduleUrl}?import`, // Ensure the Vite dev server responds with a JS module
+    clientActionModule: hasRouteChunkByExportName.clientAction
+      ? `${getRouteChunkModuleId(moduleUrl, "clientAction")}`
+      : undefined,
+    clientLoaderModule: hasRouteChunkByExportName.clientLoader
+      ? `${getRouteChunkModuleId(moduleUrl, "clientLoader")}`
+      : undefined,
+    hydrateFallbackModule: hasRouteChunkByExportName.HydrateFallback
+      ? `${getRouteChunkModuleId(moduleUrl, "HydrateFallback")}`
+      : undefined,
     hasAction: sourceExports.includes("action"),
     hasClientAction: sourceExports.includes("clientAction"),
     hasLoader: sourceExports.includes("loader"),
@@ -2171,4 +2518,138 @@ function createPrerenderRoutes(
           ...commonRoute,
         };
   });
+}
+
+type ResolveRouteFileCodeInput =
+  | string
+  | {
+      routeFile: string;
+      readRouteFile?: () => string | Promise<string>;
+      viteChildCompiler: Vite.ViteDevServer | null;
+    };
+const resolveRouteFileCode = async (
+  ctx: ReactRouterPluginContext,
+  input: ResolveRouteFileCodeInput
+): Promise<string> => {
+  if (typeof input === "string") return input;
+  invariant(input.viteChildCompiler);
+  return await compileRouteFile(
+    input.viteChildCompiler,
+    ctx,
+    input.routeFile,
+    input.readRouteFile
+  );
+};
+
+async function detectRouteChunksIfEnabled(
+  cache: Cache,
+  ctx: ReactRouterPluginContext,
+  id: string,
+  input: ResolveRouteFileCodeInput
+): Promise<ReturnType<typeof detectRouteChunks>> {
+  function noRouteChunks(): ReturnType<typeof detectRouteChunks> {
+    return {
+      chunkedExports: [],
+      hasRouteChunks: false,
+      hasRouteChunkByExportName: {
+        clientAction: false,
+        clientLoader: false,
+        HydrateFallback: false,
+      },
+    };
+  }
+
+  if (!ctx.reactRouterConfig.future.unstable_routeChunks) {
+    return noRouteChunks();
+  }
+
+  // If this is the root route, we disable chunking since the chunks would never
+  // be loaded on demand during navigation. Because the root route is matched
+  // for all requests, all of its chunks would always be loaded up front during
+  // the initial page load. Instead of firing off multiple requests to resolve
+  // the root route code, we want it to be downloaded in a single request.
+  if (
+    normalizeRelativeFilePath(id, ctx.reactRouterConfig) ===
+    ctx.reactRouterConfig.routes.root.file
+  ) {
+    return noRouteChunks();
+  }
+
+  let code = await resolveRouteFileCode(ctx, input);
+  if (!routeChunkExportNames.some((exportName) => code.includes(exportName))) {
+    return noRouteChunks();
+  }
+
+  let cacheKey =
+    normalizeRelativeFilePath(id, ctx.reactRouterConfig) +
+    (typeof input === "string" ? "" : "?read");
+
+  return detectRouteChunks(code, cache, cacheKey);
+}
+
+async function getRouteChunkIfEnabled(
+  cache: Cache,
+  ctx: ReactRouterPluginContext,
+  id: string,
+  chunkName: RouteChunkName,
+  input: ResolveRouteFileCodeInput
+): Promise<ReturnType<typeof getRouteChunkCode> | null> {
+  if (!ctx.reactRouterConfig.future.unstable_routeChunks) {
+    return null;
+  }
+
+  let code = await resolveRouteFileCode(ctx, input);
+
+  let cacheKey =
+    normalizeRelativeFilePath(id, ctx.reactRouterConfig) +
+    (typeof input === "string" ? "" : "?read");
+
+  return getRouteChunkCode(code, chunkName, cache, cacheKey);
+}
+
+function validateRouteChunks({
+  ctx,
+  id,
+  valid,
+}: {
+  ctx: ReactRouterPluginContext;
+  id: string;
+  valid: Record<Exclude<RouteChunkName, "main">, boolean>;
+}): void {
+  let invalidChunks = Object.entries(valid)
+    .filter(([_, isValid]) => !isValid)
+    .map(([chunkName]) => chunkName);
+
+  if (invalidChunks.length === 0) {
+    return;
+  }
+
+  let plural = invalidChunks.length > 1;
+
+  throw new Error(
+    [
+      `Route chunks error: ${normalizeRelativeFilePath(
+        id,
+        ctx.reactRouterConfig
+      )}`,
+
+      invalidChunks.map((name) => `- ${name}`).join("\n"),
+
+      `${
+        plural ? `These exports were` : `This export was`
+      } unable to be split into ${
+        plural ? "their own chunks" : "its own chunk"
+      } because ${
+        plural ? "they reference" : "it references"
+      } code in the same file that is used by other route module exports.`,
+
+      `If you need to share code between ${
+        plural ? `these` : `this`
+      } and other exports, you should extract the shared code into a separate module.`,
+    ].join("\n\n")
+  );
+}
+
+function isNonNullable<T>(x: T): x is NonNullable<T> {
+  return x != null;
 }

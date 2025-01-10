@@ -186,7 +186,11 @@ function processRoutes(
       hasClientAction: false,
       hasClientLoader: false,
       hasErrorBoundary: route.ErrorBoundary != null,
-      module: "build/stub-path-to-module.js", // any need for this?
+      // any need for these?
+      module: "build/stub-path-to-module.js",
+      clientActionModule: undefined,
+      clientLoaderModule: undefined,
+      hydrateFallbackModule: undefined,
     };
     manifest.routes[newRoute.id] = entryRoute;
 

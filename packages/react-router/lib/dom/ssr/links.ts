@@ -34,7 +34,7 @@ export function getKeyedLinksForMatches(
     })
     .flat(2);
 
-  let preloads = getCurrentPageModulePreloadHrefs(matches, manifest);
+  let preloads = getModuleLinkHrefs(matches, manifest);
   return dedupeLinkDescriptors(descriptors, preloads);
 }
 
@@ -232,28 +232,6 @@ export function getNewMatchesForLinks(
 
 export function getModuleLinkHrefs(
   matches: AgnosticDataRouteMatch[],
-  manifestPatch: AssetsManifest
-): string[] {
-  return dedupeHrefs(
-    matches
-      .map((match) => {
-        let route = manifestPatch.routes[match.route.id];
-        if (!route) return [];
-        let hrefs = [route.module];
-        if (route.imports) {
-          hrefs = hrefs.concat(route.imports);
-        }
-        return hrefs;
-      })
-      .flat(1)
-  );
-}
-
-// The `<Script>` will render rel=modulepreload for the current page, we don't
-// need to include them in a page prefetch, this gives us the list to remove
-// while deduping.
-function getCurrentPageModulePreloadHrefs(
-  matches: AgnosticDataRouteMatch[],
   manifest: AssetsManifest
 ): string[] {
   return dedupeHrefs(
@@ -262,6 +240,14 @@ function getCurrentPageModulePreloadHrefs(
         let route = manifest.routes[match.route.id];
         if (!route) return [];
         let hrefs = [route.module];
+        if (route.clientActionModule) {
+          hrefs = hrefs.concat(route.clientActionModule);
+        }
+        if (route.clientLoaderModule) {
+          hrefs = hrefs.concat(route.clientLoaderModule);
+        }
+        // Note: route.hydrateFallbackModule is not included in because it's only
+        // needed on the initial page load.
         if (route.imports) {
           hrefs = hrefs.concat(route.imports);
         }

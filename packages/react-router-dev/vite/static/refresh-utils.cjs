@@ -23,6 +23,7 @@ const enqueueUpdate = debounce(async () => {
           `[react-router:hmr] No module update found for route ${route.id}`
         );
       }
+
       let routeModule = {
         ...imported,
         // react-refresh takes care of updating these in-place,

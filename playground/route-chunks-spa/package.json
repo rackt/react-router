@@ -1,0 +1,31 @@
+{
+  "name": "@playground/route-chunks-spa",
+  "version": "0.0.0",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "scripts": {
+    "build": "react-router build",
+    "dev": "react-router dev",
+    "preview": "vite preview",
+    "typecheck": "react-router typegen && tsc"
+  },
+  "dependencies": {
+    "@react-router/node": "workspace:*",
+    "isbot": "^5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router": "workspace:*"
+  },
+  "devDependencies": {
+    "@react-router/dev": "workspace:*",
+    "@types/react": "^18.2.20",
+    "@types/react-dom": "^18.2.7",
+    "typescript": "^5.1.6",
+    "vite": "^6.0.0",
+    "vite-tsconfig-paths": "^4.2.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
