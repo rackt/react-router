@@ -247,7 +247,7 @@ export default function Component() {
 
 ## 7. Boot the app
 
-At this point you should be able to to boot the app and see the root layout.
+At this point you should be able to boot the app and see the root layout.
 
 **👉 Add `dev` script and run the app**
 
