@@ -20,6 +20,7 @@
     "test:integration:run": "pnpm playwright:integration",
     "test:integration": "pnpm build && pnpm test:integration:run",
     "posttest:integration:run": "pnpm clean:integration",
+    "playwright:report": "playwright test --config ./integration/playwright.config.ts integration/bug-report-test.ts",
     "playwright:integration": "playwright test --config ./integration/playwright.config.ts",
     "changeset": "changeset",
     "changeset:version": "changeset version && node ./scripts/remove-prerelease-changelogs.mjs",

@@ -34,13 +34,13 @@ let appFixture: AppFixture;
 // Now try running this test:
 //
 //    ```
-//    pnpm bug-report-test
+//    pnpm playwright:report
 //    ```
 //
 // You can add `--watch` to the end to have it re-run on file changes:
 //
 //    ```
-//    pnpm bug-report-test --watch
+//    pnpm playwright:report -- --watch
 //    ```
 ////////////////////////////////////////////////////////////////////////////////
 
