@@ -7956,6 +7956,41 @@ function testDomRouter(
       });
     });
   });
+
+  if (name === "<DataBrowserRouter>") {
+    describe("DataBrowserRouter-only tests", () => {
+      it("is defensive against double slash URLs in window.location", async () => {
+        let testWindow = getWindow("/a///b");
+        let router = createTestRouter(
+          [
+            {
+              path: "*",
+              Component() {
+                return <Link to="/page">Go to Page</Link>;
+              },
+            },
+            {
+              path: "/page",
+              Component() {
+                return <h1>Worked!</h1>;
+              },
+            },
+          ],
+          {
+            window: testWindow,
+          }
+        );
+        render(<RouterProvider router={router} />);
+        expect(testWindow.location.pathname).toBe("/a///b");
+        expect(router.state.location.pathname).toBe("/a/b");
+
+        fireEvent.click(screen.getByText("Go to Page"));
+        await waitFor(() => screen.getByText("Worked!"));
+        expect(testWindow.location.pathname).toBe("/page");
+        expect(router.state.location.pathname).toBe("/page");
+      });
+    });
+  }
 }
 
 function getWindowImpl(initialUrl: string, isHash = false): Window {
