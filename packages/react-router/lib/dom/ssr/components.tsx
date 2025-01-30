@@ -288,7 +288,7 @@ export function PrefetchPageLinks({
 }
 
 function useKeyedPrefetchLinks(matches: AgnosticDataRouteMatch[]) {
-  let { manifest, routeModules } = useFrameworkContext();
+  let { manifest, routeModules, loadRouteModule } = useFrameworkContext();
 
   let [keyedPrefetchLinks, setKeyedPrefetchLinks] = React.useState<
     KeyedHtmlLinkDescriptor[]
@@ -297,13 +297,16 @@ function useKeyedPrefetchLinks(matches: AgnosticDataRouteMatch[]) {
   React.useEffect(() => {
     let interrupted: boolean = false;
 
-    void getKeyedPrefetchLinks(matches, manifest, routeModules).then(
-      (links) => {
+    void getKeyedPrefetchLinks(
+      matches,
+      manifest,
+      routeModules,
+      loadRouteModule
+    ).then((links) => {
         if (!interrupted) {
           setKeyedPrefetchLinks(links);
         }
-      }
-    );
+    });
 
     return () => {
       interrupted = true;

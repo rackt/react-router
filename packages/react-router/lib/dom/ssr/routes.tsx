@@ -10,7 +10,7 @@ import type {
 } from "../../router/utils";
 import { ErrorResponseImpl } from "../../router/utils";
 import type { RouteModule, RouteModules } from "./routeModules";
-import { loadRouteModule } from "./routeModules";
+import type { LoadRouteModuleFunction } from "./routeModules";
 import type { FutureConfig } from "./entry";
 import { prefetchRouteCss, prefetchStyleLinks } from "./links";
 import { RemixRootDefaultErrorBoundary } from "./errorBoundaries";
@@ -174,13 +174,15 @@ export function createClientRoutesWithHMRRevalidationOptOut(
   routeModulesCache: RouteModules,
   initialState: HydrationState,
   future: FutureConfig,
-  isSpaMode: boolean
+  isSpaMode: boolean,
+  loadRouteModule: LoadRouteModuleFunction
 ) {
   return createClientRoutes(
     manifest,
     routeModulesCache,
     initialState,
     isSpaMode,
+    loadRouteModule,
     "",
     groupRoutesByParentId(manifest),
     needsRevalidation
@@ -229,6 +231,7 @@ export function createClientRoutes(
   routeModulesCache: RouteModules,
   initialState: HydrationState | null,
   isSpaMode: boolean,
+  loadRouteModule: LoadRouteModuleFunction,
   parentId: string = "",
   routesByParentId: Record<
     string,
@@ -494,7 +497,8 @@ export function createClientRoutes(
 
         let modPromise = loadRouteModuleWithBlockingLinks(
           route,
-          routeModulesCache
+          routeModulesCache,
+          loadRouteModule
         );
         prefetchRouteModuleChunks(route);
         let mod = await modPromise;
@@ -553,6 +557,7 @@ export function createClientRoutes(
       routeModulesCache,
       initialState,
       isSpaMode,
+      loadRouteModule,
       route.id,
       routesByParentId,
       needsRevalidation
@@ -609,7 +614,8 @@ function wrapShouldRevalidateForHdr(
 
 async function loadRouteModuleWithBlockingLinks(
   route: EntryRoute,
-  routeModules: RouteModules
+  routeModules: RouteModules,
+  loadRouteModule: LoadRouteModuleFunction
 ) {
   // Ensure the route module and its static CSS links are loaded in parallel as
   // soon as possible before blocking on the route module

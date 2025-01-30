@@ -10,7 +10,13 @@ import type {
   IndexRouteObject,
   NonIndexRouteObject,
 } from "../../context";
-import type { LinksFunction, MetaFunction, RouteModules } from "./routeModules";
+import {
+  defaultLoadRouteModule,
+  type LinksFunction,
+  type LoadRouteModuleFunction,
+  type MetaFunction,
+  type RouteModules,
+} from "./routeModules";
 import type { InitialEntry } from "../../router/history";
 import type { HydrationState } from "../../router/router";
 import { convertRoutesToDataRoutes } from "../../router/utils";
@@ -84,6 +90,11 @@ export interface RoutesTestStubProps {
    * Future flags mimicking the settings in react-router.config.ts
    */
   future?: Partial<FutureConfig>;
+
+  /**
+   * LoadRouteModuleFunction to use in the test
+   */
+  loadRouteModule?: LoadRouteModuleFunction;
 }
 
 /**
@@ -98,6 +109,7 @@ export function createRoutesStub(
     initialIndex,
     hydrationData,
     future,
+    loadRouteModule = defaultLoadRouteModule,
   }: RoutesTestStubProps) {
     let routerRef = React.useRef<ReturnType<typeof createMemoryRouter>>();
     let remixContextRef = React.useRef<FrameworkContextObject>();
@@ -113,6 +125,7 @@ export function createRoutesStub(
         },
         routeModules: {},
         isSpaMode: false,
+        loadRouteModule,
       };
 
       // Update the routes to include context in the loader/action and populate

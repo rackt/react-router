@@ -4,7 +4,7 @@ import type { Router as DataRouter } from "../../router/router";
 import type { RouteManifest } from "../../router/utils";
 import { matchRoutes } from "../../router/utils";
 import type { AssetsManifest } from "./entry";
-import type { RouteModules } from "./routeModules";
+import type { LoadRouteModuleFunction, RouteModules } from "./routeModules";
 import type { EntryRoute } from "./routes";
 import { createClientRoutes } from "./routes";
 
@@ -71,7 +71,8 @@ export function getPatchRoutesOnNavigationFunction(
   manifest: AssetsManifest,
   routeModules: RouteModules,
   isSpaMode: boolean,
-  basename: string | undefined
+  basename: string | undefined,
+  loadRouteModule: LoadRouteModuleFunction
 ): PatchRoutesOnNavigationFunction | undefined {
   if (!isFogOfWarEnabled(isSpaMode)) {
     return undefined;
@@ -86,6 +87,7 @@ export function getPatchRoutesOnNavigationFunction(
       manifest,
       routeModules,
       isSpaMode,
+      loadRouteModule,
       basename,
       patch
     );
@@ -96,7 +98,8 @@ export function useFogOFWarDiscovery(
   router: DataRouter,
   manifest: AssetsManifest,
   routeModules: RouteModules,
-  isSpaMode: boolean
+  isSpaMode: boolean,
+  loadRouteModule: LoadRouteModuleFunction
 ) {
   React.useEffect(() => {
     // Don't prefetch if not enabled or if the user has `saveData` enabled
@@ -151,6 +154,7 @@ export function useFogOFWarDiscovery(
           manifest,
           routeModules,
           isSpaMode,
+          loadRouteModule,
           router.basename,
           router.patchRoutes
         );
@@ -184,6 +188,7 @@ export async function fetchAndApplyManifestPatches(
   manifest: AssetsManifest,
   routeModules: RouteModules,
   isSpaMode: boolean,
+  loadRouteModule: LoadRouteModuleFunction,
   basename: string | undefined,
   patchRoutes: DataRouter["patchRoutes"]
 ): Promise<void> {
@@ -237,7 +242,14 @@ export async function fetchAndApplyManifestPatches(
   parentIds.forEach((parentId) =>
     patchRoutes(
       parentId || null,
-      createClientRoutes(patches, routeModules, null, isSpaMode, parentId)
+      createClientRoutes(
+        patches,
+        routeModules,
+        null,
+        isSpaMode,
+        loadRouteModule,
+        parentId
+      )
     )
   );
 }

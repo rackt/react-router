@@ -31,6 +31,10 @@ import {
 import { getDocumentHeaders } from "./headers";
 import invariant from "./invariant";
 import type { EntryRoute } from "../dom/ssr/routes";
+import {
+  defaultLoadRouteModule,
+  type LoadRouteModuleFunction,
+} from "../dom/ssr/routeModules";
 
 export type RequestHandler = (
   request: Request,
@@ -403,6 +407,7 @@ async function handleDocumentRequest(
     future: build.future,
     isSpaMode: build.isSpaMode,
     serializeError: (err) => serializeError(err, serverMode),
+    loadRouteModule: defaultLoadRouteModule,
   };
 
   let handleDocumentRequestFunction = build.entry.module.default;

@@ -24,6 +24,10 @@ import {
   matchRoutes,
 } from "react-router";
 import { RouterProvider } from "./dom-router-provider";
+import {
+  defaultLoadRouteModule,
+  LoadRouteModuleFunction,
+} from "../dom/ssr/routeModules";
 
 type SSRInfo = {
   context: NonNullable<(typeof window)["__reactRouterContext"]>;
@@ -60,7 +64,11 @@ function initSsrInfo(): void {
   }
 }
 
-function createHydratedRouter(): DataRouter {
+function createHydratedRouter({
+  loadRouteModule = defaultLoadRouteModule,
+}: {
+  loadRouteModule?: LoadRouteModuleFunction;
+} = {}): DataRouter {
   initSsrInfo();
 
   if (!ssrInfo) {
@@ -102,7 +110,8 @@ function createHydratedRouter(): DataRouter {
     ssrInfo.manifest.routes,
     ssrInfo.routeModules,
     ssrInfo.context.state,
-    ssrInfo.context.isSpaMode
+    ssrInfo.context.isSpaMode,
+    loadRouteModule
   );
 
   let hydrationData: HydrationState | undefined = undefined;
@@ -177,7 +186,8 @@ function createHydratedRouter(): DataRouter {
       ssrInfo.manifest,
       ssrInfo.routeModules,
       ssrInfo.context.isSpaMode,
-      ssrInfo.context.basename
+      ssrInfo.context.basename,
+      loadRouteModule
     ),
   });
   ssrInfo.router = router;
@@ -201,9 +211,13 @@ function createHydratedRouter(): DataRouter {
 /**
  * @category Component Routers
  */
-export function HydratedRouter() {
+export function HydratedRouter({
+  loadRouteModule = defaultLoadRouteModule,
+}: {
+  loadRouteModule?: LoadRouteModuleFunction;
+}) {
   if (!router) {
-    router = createHydratedRouter();
+    router = createHydratedRouter({ loadRouteModule });
   }
 
   // Critical CSS can become stale after code changes, e.g. styles might be
@@ -247,7 +261,8 @@ export function HydratedRouter() {
     router,
     ssrInfo.manifest,
     ssrInfo.routeModules,
-    ssrInfo.context.isSpaMode
+    ssrInfo.context.isSpaMode,
+    loadRouteModule
   );
 
   // We need to include a wrapper RemixErrorBoundary here in case the root error
@@ -265,6 +280,7 @@ export function HydratedRouter() {
           future: ssrInfo.context.future,
           criticalCss,
           isSpaMode: ssrInfo.context.isSpaMode,
+          loadRouteModule,
         }}
       >
         <RemixErrorBoundary location={location}>
