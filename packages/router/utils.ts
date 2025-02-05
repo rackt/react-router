@@ -138,6 +138,8 @@ export type Submission =
  */
 interface DataFunctionArgs<Context> {
   request: Request;
+  location: Location;
+  matches: AgnosticDataRouteMatch[];
   params: Params;
   context?: Context;
 }

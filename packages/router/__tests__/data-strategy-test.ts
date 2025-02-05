@@ -61,7 +61,49 @@ describe("router dataStrategy", () => {
 
       // Should be called in parallel
       expect(A.loaders.json.stub).toHaveBeenCalledTimes(1);
+      expect(A.loaders.json.stub).toHaveBeenCalledWith(
+        expect.objectContaining({
+          request: expect.any(Request),
+          params: {},
+          location: expect.objectContaining({
+            pathname: "/test",
+          }),
+          matches: [
+            expect.objectContaining({
+              route: expect.objectContaining({
+                id: "json",
+              }),
+            }),
+            expect.objectContaining({
+              route: expect.objectContaining({
+                id: "text",
+              }),
+            }),
+          ],
+        })
+      );
       expect(A.loaders.text.stub).toHaveBeenCalledTimes(1);
+      expect(A.loaders.text.stub).toHaveBeenCalledWith(
+        expect.objectContaining({
+          request: expect.any(Request),
+          params: {},
+          location: expect.objectContaining({
+            pathname: "/test",
+          }),
+          matches: [
+            expect.objectContaining({
+              route: expect.objectContaining({
+                id: "json",
+              }),
+            }),
+            expect.objectContaining({
+              route: expect.objectContaining({
+                id: "text",
+              }),
+            }),
+          ],
+        })
+      );
 
       await A.loaders.json.resolve(json({ message: "hello json" }));
       await A.loaders.text.resolve(new Response("hello text"));
@@ -74,6 +116,9 @@ describe("router dataStrategy", () => {
         expect.objectContaining({
           request: expect.any(Request),
           params: {},
+          location: expect.objectContaining({
+            pathname: "/test",
+          }),
           matches: [
             expect.objectContaining({
               route: expect.objectContaining({

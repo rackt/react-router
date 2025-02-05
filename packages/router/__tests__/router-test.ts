@@ -1338,6 +1338,8 @@ describe("a router", () => {
 
       let nav = await t.navigate("/tasks");
       expect(nav.loaders.tasks.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: {},
         request: new Request("http://localhost/tasks", {
           signal: nav.loaders.tasks.stub.mock.calls[0][0].request.signal,
@@ -1346,6 +1348,8 @@ describe("a router", () => {
 
       let nav2 = await t.navigate("/tasks/1");
       expect(nav2.loaders.tasksId.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: { id: "1" },
         request: new Request("http://localhost/tasks/1", {
           signal: nav2.loaders.tasksId.stub.mock.calls[0][0].request.signal,
@@ -1354,6 +1358,8 @@ describe("a router", () => {
 
       let nav3 = await t.navigate("/tasks?foo=bar#hash");
       expect(nav3.loaders.tasks.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: {},
         request: new Request("http://localhost/tasks?foo=bar", {
           signal: nav3.loaders.tasks.stub.mock.calls[0][0].request.signal,
@@ -1364,6 +1370,8 @@ describe("a router", () => {
         formData: createFormData({ foo: "bar" }),
       });
       expect(nav4.loaders.tasks.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: {},
         request: new Request("http://localhost/tasks?foo=bar", {
           signal: nav4.loaders.tasks.stub.mock.calls[0][0].request.signal,
@@ -1763,6 +1771,8 @@ describe("a router", () => {
         formData: createFormData({ query: "params" }),
       });
       expect(nav.actions.tasks.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: {},
         request: expect.any(Request),
       });
@@ -1806,6 +1816,8 @@ describe("a router", () => {
         formData,
       });
       expect(nav.actions.tasks.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: {},
         request: expect.any(Request),
       });
@@ -1838,6 +1850,8 @@ describe("a router", () => {
         formData: createFormData({ query: "params" }),
       });
       expect(nav.actions.tasks.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: {},
         request: expect.any(Request),
       });

@@ -950,6 +950,8 @@ describe("submissions", () => {
       await nav.actions.root.resolve("ACTION");
 
       expect(nav.actions.root.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: {},
         request: expect.any(Request),
       });
@@ -983,6 +985,8 @@ describe("submissions", () => {
       await nav.actions.root.resolve("ACTION");
 
       expect(nav.actions.root.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: {},
         request: expect.any(Request),
       });
@@ -1014,6 +1018,8 @@ describe("submissions", () => {
       await nav.actions.root.resolve("ACTION");
 
       expect(nav.actions.root.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: {},
         request: expect.any(Request),
       });
@@ -1117,6 +1123,8 @@ describe("submissions", () => {
       await nav.actions.root.resolve("ACTION");
 
       expect(nav.actions.root.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: {},
         request: expect.any(Request),
       });
@@ -1154,6 +1162,8 @@ describe("submissions", () => {
       await nav.actions.root.resolve("ACTION");
 
       expect(nav.actions.root.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: {},
         request: expect.any(Request),
       });
@@ -1188,6 +1198,8 @@ describe("submissions", () => {
       await nav.actions.root.resolve("ACTION");
 
       expect(nav.actions.root.stub).toHaveBeenCalledWith({
+        location: expect.anything(),
+        matches: expect.anything(),
         params: {},
         request: expect.any(Request),
       });
