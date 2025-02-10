@@ -5,6 +5,7 @@ import pc from "picocolors";
 import type vite from "vite";
 
 import { createConfigLoader } from "../config/config";
+import type { RouteManifestEntry } from "../config/routes";
 
 import { generate } from "./generate";
 import type { Context } from "./context";
@@ -71,11 +72,21 @@ async function createContext({
   };
 }
 
+function isRouteInAppDirectory(ctx: Context, route: RouteManifestEntry) {
+  const absoluteRoutePath = Path.resolve(ctx.config.appDirectory, route.file);
+  return absoluteRoutePath.startsWith(ctx.config.appDirectory);
+}
+
 async function writeAll(ctx: Context): Promise<void> {
   const typegenDir = getTypesDir(ctx);
 
   fs.rmSync(typegenDir, { recursive: true, force: true });
   Object.values(ctx.config.routes).forEach((route) => {
+    // We only generate types for routes in the app directory
+    if (!isRouteInAppDirectory(ctx, route)) {
+      return;
+    }
+
     const typesPath = getTypesPath(ctx, route);
     const content = generate(ctx, route);
     fs.mkdirSync(Path.dirname(typesPath), { recursive: true });
