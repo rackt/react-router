@@ -1,5 +1,5 @@
 packages:
   - "integration"
-  - "integration/helpers/*"
+  - "integration/helpers/**"
   - "packages/*"
   - "playground/*"

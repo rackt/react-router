@@ -5,7 +5,11 @@ import { expect, test } from "@playwright/test";
 import dedent from "dedent";
 import fse from "fs-extra";
 
-import { createProject } from "./helpers/vite";
+import {
+  createProject,
+  createWorkspaceProject,
+} from "./helpers/vite";
+import { getAllFilesInDir } from "./helpers/filesystem";
 
 const tsx = dedent;
 
@@ -361,5 +365,40 @@ test.describe("typegen", () => {
     expect(proc.stdout.toString()).toBe("");
     expect(proc.stderr.toString()).toBe("");
     expect(proc.status).toBe(0);
+  });
+
+  test("route files from workspace packages", async () => {
+    const { appProjectDir } = await createWorkspaceProject((libDir) => ({
+      appFiles: {
+        "app/routes.ts": tsx`
+          import type { RouteConfig } from "@react-router/dev/routes";
+          export default [
+            { path: 'lib-route', file: "${libDir}/my-route.jsx" }
+          ] satisfies RouteConfig;
+        `,
+      },
+      libFiles: {
+        "my-route.jsx": tsx`
+          export default function MyRoute() {
+            return <h1>My Route</h1>;
+          }
+        `,
+      },
+    }));
+
+    const proc = typecheck(appProjectDir);
+
+    expect(proc.stdout.toString()).toBe("");
+    expect(proc.stderr.toString()).toBe("");
+    expect(proc.status).toBe(0);
+
+    // Expect that the route library's typing is not generated into the app project
+    const files = await getAllFilesInDir(appProjectDir);
+    const appProjectFiles = files.filter(
+      (name) => !name.includes("node_modules")
+    );
+    expect(
+      appProjectFiles.some((name) => name.includes("my-route"))
+    ).toBeFalsy();
   });
 });
