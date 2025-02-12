@@ -17,6 +17,7 @@ describe("createRequestHandler", () => {
       entry: { module: {} as any },
       // @ts-expect-error
       future: {},
+      prerender: [],
     });
 
     let response = await handler(

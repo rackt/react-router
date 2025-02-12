@@ -102,11 +102,17 @@ function createHydratedRouter(): DataRouter {
     ssrInfo.manifest.routes,
     ssrInfo.routeModules,
     ssrInfo.context.state,
+    ssrInfo.context.ssr,
     ssrInfo.context.isSpaMode
   );
 
   let hydrationData: HydrationState | undefined = undefined;
-  if (!ssrInfo.context.isSpaMode) {
+  let loaderData = ssrInfo.context.state.loaderData;
+  if (ssrInfo.context.isSpaMode) {
+    // In SPA mode we hydrate in any build-time loader data which should be
+    // limited to the root route
+    hydrationData = { loaderData };
+  } else {
     // Create a shallow clone of `loaderData` we can mutate for partial hydration.
     // When a route exports a `clientLoader` and a `HydrateFallback`, the SSR will
     // render the fallback so we need the client to do the same for hydration.
@@ -115,7 +121,7 @@ function createHydratedRouter(): DataRouter {
     // `createBrowserRouter` so it initializes and runs the client loaders.
     hydrationData = {
       ...ssrInfo.context.state,
-      loaderData: { ...ssrInfo.context.state.loaderData },
+      loaderData: { ...loaderData },
     };
     let initialMatches = matchRoutes(
       routes,
@@ -171,6 +177,7 @@ function createHydratedRouter(): DataRouter {
     dataStrategy: getSingleFetchDataStrategy(
       ssrInfo.manifest,
       ssrInfo.routeModules,
+      ssrInfo.context.ssr,
       () => router
     ),
     patchRoutesOnNavigation: getPatchRoutesOnNavigationFunction(

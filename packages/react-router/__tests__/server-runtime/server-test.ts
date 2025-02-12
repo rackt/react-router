@@ -60,6 +60,7 @@ describe.skip("server", () => {
       },
     },
     future: {},
+    prerender: [],
   } as unknown as ServerBuild;
 
   describe("createRequestHandler", () => {

@@ -263,6 +263,9 @@ export type {
   FlashSessionData,
 } from "./lib/server-runtime/sessions";
 
+export type { Register } from "./lib/types/register";
+export { href } from "./lib/href";
+
 ///////////////////////////////////////////////////////////////////////////////
 // DANGER! PLEASE READ ME!
 // We provide these exports as an escape hatch in the event that you need any

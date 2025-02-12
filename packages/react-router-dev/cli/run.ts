@@ -156,7 +156,7 @@ export async function run(argv: string[] = process.argv.slice(2)) {
     return;
   }
   if (flags.version) {
-    let version = require("../package.json").version;
+    let version = require("../../package.json").version;
     console.log(version);
     return;
   }

@@ -42,8 +42,40 @@ test.describe("SPA Mode", () => {
             let stderr = result.stderr.toString("utf8");
             expect(stderr).toMatch(
               "SPA Mode: 3 invalid route export(s) in `routes/invalid-exports.tsx`: " +
-                "`headers`, `loader`, `action`. See https://remix.run/guides/spa-mode " +
+                "`headers`, `loader`, `action`. See https://reactrouter.com/how-to/spa " +
                 "for more information."
+            );
+          });
+
+          test("allows loader in root route", async () => {
+            let cwd = await createProject({
+              "react-router.config.ts": reactRouterConfig({
+                ssr: false,
+                splitRouteModules,
+              }),
+              "app/root.tsx": String.raw`
+                // Invalid exports
+                export function headers() {}
+                export function action() {}
+
+                // Valid exports
+                export function loader() {}
+                export function clientLoader() {}
+                export function clientAction() {}
+                export default function Component() {}
+              `,
+              "app/routes/_index.tsx": String.raw`
+                // Valid exports
+                export function clientLoader() {}
+                export function clientAction() {}
+                export default function Component() {}
+              `,
+            });
+            let result = build({ cwd });
+            let stderr = result.stderr.toString("utf8");
+            expect(stderr).toMatch(
+              "SPA Mode: 2 invalid route export(s) in `root.tsx`: `headers`, `action`. " +
+                "See https://reactrouter.com/how-to/spa for more information."
             );
           });
 
@@ -68,7 +100,7 @@ test.describe("SPA Mode", () => {
             expect(stderr).toMatch(
               "SPA Mode: Invalid `HydrateFallback` export found in `routes/invalid-exports.tsx`. " +
                 "`HydrateFallback` is only permitted on the root route in SPA Mode. " +
-                "See https://remix.run/guides/spa-mode for more information."
+                "See https://reactrouter.com/how-to/spa for more information."
             );
           });
 
@@ -135,7 +167,7 @@ test.describe("SPA Mode", () => {
             let stderr = result.stderr.toString("utf8");
             expect(stderr).toMatch(
               "SPA Mode: Received a 500 status code from `entry.server.tsx` while " +
-                "prerendering the `/` path."
+                "prerendering your `index.html` file."
             );
             expect(stderr).toMatch("<h1>Loading...</h1>");
           });
@@ -155,8 +187,8 @@ test.describe("SPA Mode", () => {
             let result = build({ cwd });
             let stderr = result.stderr.toString("utf8");
             expect(stderr).toMatch(
-              "SPA Mode: Did you forget to include <Scripts/> in your root route? " +
-                "Your pre-rendered HTML files cannot hydrate without `<Scripts />`."
+              "SPA Mode: Did you forget to include `<Scripts/>` in your root route? " +
+                "Your pre-rendered HTML cannot hydrate without `<Scripts />`."
             );
           });
         });
@@ -637,7 +669,7 @@ test.describe("SPA Mode", () => {
               `,
               "app/root.tsx": js`
                 import * as React from "react";
-                import { Form, Link, Links, Meta, Outlet, Scripts } from "react-router";
+                import { Form, Link, Links, Meta, Outlet, Scripts, useLoaderData } from "react-router";
 
                 export function meta({ data }) {
                   return [{
@@ -650,6 +682,10 @@ test.describe("SPA Mode", () => {
                     rel: "stylesheet",
                     href: "styles-root.css"
                   }];
+                }
+
+                export function loader() {
+                  return { message: "Root Loader Data" };
                 }
 
                 export default function Root() {
@@ -693,6 +729,7 @@ test.describe("SPA Mode", () => {
 
                 export function HydrateFallback() {
                   const id = React.useId();
+                  const loaderData = useLoaderData();
                   const [hydrated, setHydrated] = React.useState(false);
                   React.useEffect(() => setHydrated(true), []);
 
@@ -704,6 +741,7 @@ test.describe("SPA Mode", () => {
                       </head>
                       <body>
                         <h1 data-loading>Loading SPA...</h1>
+                        <p data-loader-data>{loaderData?.message}</p>
                         <pre data-use-id>{id}</pre>
                         {hydrated ? <h3 data-hydrated>Hydrated</h3> : null}
                         <Scripts />
@@ -731,7 +769,7 @@ test.describe("SPA Mode", () => {
 
                 export async function clientLoader({ request }) {
                   if (new URL(request.url).searchParams.has('slow')) {
-                    await new Promise(r => setTimeout(r, 500));
+                    await new Promise(r => setTimeout(r, 1000));
                   }
                   return "Index Loader Data";
                 }
@@ -812,10 +850,13 @@ test.describe("SPA Mode", () => {
           appFixture.close();
         });
 
-        test("renders the root HydrateFallback initially", async ({ page }) => {
+        test("renders the root HydrateFallback initially with access to the root loader data", async ({}) => {
           let res = await fixture.requestDocument("/");
           let html = await res.text();
           expect(html).toMatch('<h1 data-loading="true">Loading SPA...</h1>');
+          expect(html).toMatch(
+            '<p data-loader-data="true">Root Loader Data</p>'
+          );
         });
 
         test("does not include Meta/Links from routes below the root", async ({
@@ -862,20 +903,22 @@ test.describe("SPA Mode", () => {
         });
 
         test("hydrates a proper useId value", async ({ page }) => {
-          // SSR'd useId value we can assert against pre- and post-hydration
-          let USE_ID_VALUE = ":R5:";
-
           // Ensure we SSR a proper useId value
           let res = await fixture.requestDocument("/");
           let html = await res.text();
-          expect(html).toMatch(`<pre data-use-id="true">${USE_ID_VALUE}</pre>`);
+          expect(html).toMatch(/<pre data-use-id="true">(:[a-zA-Z]\d:)<\/pre>/);
+          let matches = /<pre data-use-id="true">(:[a-zA-Z]\d:)<\/pre>/.exec(
+            html
+          );
+          expect(matches?.length).toBe(2);
+          let useIdValue = matches?.[1];
 
           // We should hydrate the same useId value in HydrateFallback
           let app = new PlaywrightFixture(appFixture, page);
           await app.goto("/?slow");
           await page.waitForSelector("[data-hydrated]");
           expect(await page.locator("[data-use-id]").textContent()).toBe(
-            USE_ID_VALUE
+            useIdValue
           );
 
           // Once hydrated, we should get a different useId value from the root Component
@@ -884,7 +927,7 @@ test.describe("SPA Mode", () => {
             "Index"
           );
           expect(await page.locator("[data-use-id]").textContent()).not.toBe(
-            USE_ID_VALUE
+            useIdValue
           );
         });
 

@@ -2,13 +2,15 @@ import ts from "dedent";
 import * as Path from "pathe";
 import * as Pathe from "pathe/utils";
 
-import { type RouteManifest, type RouteManifestEntry } from "../config/routes";
+import { type RouteManifestEntry } from "../config/routes";
 import { type Context } from "./context";
 import { getTypesPath } from "./paths";
+import * as Params from "./params";
+import * as Route from "./route";
 
 export function generate(ctx: Context, route: RouteManifestEntry): string {
-  const lineage = getRouteLineage(ctx.config.routes, route);
-  const urlpath = lineage.map((route) => route.path).join("/");
+  const lineage = Route.lineage(ctx.config.routes, route);
+  const fullpath = Route.fullpath(lineage);
   const typesPath = getTypesPath(ctx, route);
 
   const parents = lineage.slice(0, -1);
@@ -42,7 +44,7 @@ export function generate(ctx: Context, route: RouteManifestEntry): string {
       file: "${route.file}"
       path: "${route.path}"
       params: {${formatParamProperties(
-        urlpath
+        fullpath
       )}} & { [key: string]: string | undefined }
       module: Module
       loaderData: T.CreateLoaderData<Module>
@@ -75,48 +77,10 @@ export function generate(ctx: Context, route: RouteManifestEntry): string {
 const noExtension = (path: string) =>
   Path.join(Path.dirname(path), Pathe.filename(path));
 
-function getRouteLineage(routes: RouteManifest, route: RouteManifestEntry) {
-  const result: RouteManifestEntry[] = [];
-  while (route) {
-    result.push(route);
-    if (!route.parentId) break;
-    route = routes[route.parentId];
-  }
-  result.reverse();
-  return result;
-}
-
-function formatParamProperties(urlpath: string) {
-  const params = parseParams(urlpath);
-  const properties = Object.entries(params).map(([name, values]) => {
-    if (values.length === 1) {
-      const isOptional = values[0];
-      return isOptional ? `"${name}"?: string` : `"${name}": string`;
-    }
-    const items = values.map((isOptional) =>
-      isOptional ? "string | undefined" : "string"
-    );
-    return `"${name}": [${items.join(", ")}]`;
-  });
+function formatParamProperties(fullpath: string) {
+  const params = Params.parse(fullpath);
+  const properties = Object.entries(params).map(([name, isRequired]) =>
+    isRequired ? `"${name}": string` : `"${name}"?: string`
+  );
   return properties.join("; ");
-}
-
-function parseParams(urlpath: string) {
-  const result: Record<string, boolean[]> = {};
-
-  let segments = urlpath.split("/");
-  segments.forEach((segment) => {
-    const match = segment.match(/^:([\w-]+)(\?)?/);
-    if (!match) return;
-    const param = match[1];
-    const isOptional = match[2] !== undefined;
-
-    result[param] ??= [];
-    result[param].push(isOptional);
-    return;
-  });
-
-  const hasSplat = segments.at(-1) === "*";
-  if (hasSplat) result["*"] = [false];
-  return result;
 }

@@ -94,9 +94,16 @@ export async function createFixture(init: FixtureInit, mode?: ServerMode) {
       prerender: init.prerender,
       requestDocument(href: string) {
         let file = new URL(href, "test://test").pathname + "/index.html";
-        let html = fse.readFileSync(
-          path.join(projectDir, "build/client" + file)
+        let mainPath = path.join(projectDir, "build", "client", file);
+        let fallbackPath = path.join(
+          projectDir,
+          "build",
+          "client",
+          "__spa-fallback.html"
         );
+        let html = fse.existsSync(mainPath)
+          ? fse.readFileSync(mainPath)
+          : fse.readFileSync(fallbackPath);
         return new Response(html, {
           headers: {
             "Content-Type": "text/html",
@@ -284,15 +291,18 @@ export async function createAppFixture(fixture: Fixture, mode?: ServerMode) {
       return new Promise(async (accept) => {
         let port = await getPort();
         let app = express();
-        app.use(express.static(path.join(fixture.projectDir, "build/client")));
+        app.use(
+          express.static(path.join(fixture.projectDir, "build", "client"))
+        );
         app.get("*", (req, res, next) => {
+          let dir = path.join(fixture.projectDir, "build", "client");
           let file = req.path.endsWith(".data")
             ? req.path
             : req.path + "/index.html";
-          res.sendFile(
-            path.join(fixture.projectDir, "build/client", file),
-            next
-          );
+          if (file.endsWith(".html") && !fse.existsSync(path.join(dir, file))) {
+            file = "__spa-fallback.html";
+          }
+          res.sendFile(path.join(dir, file), next);
         });
         let server = app.listen(port);
         accept({ stop: server.close.bind(server), port });

@@ -24,6 +24,7 @@ function getHandler(routeModule = {}, entryServerModule = {}) {
       },
     },
     future: {},
+    prerender: [],
   } as unknown as ServerBuild;
 
   return {

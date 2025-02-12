@@ -86,6 +86,7 @@ export function getPatchRoutesOnNavigationFunction(
       [path],
       manifest,
       routeModules,
+      ssr,
       isSpaMode,
       basename,
       patch,
@@ -150,6 +151,7 @@ export function useFogOFWarDiscovery(
           lazyPaths,
           manifest,
           routeModules,
+          ssr,
           isSpaMode,
           router.basename,
           router.patchRoutes
@@ -183,6 +185,7 @@ export async function fetchAndApplyManifestPatches(
   paths: string[],
   manifest: AssetsManifest,
   routeModules: RouteModules,
+  ssr: boolean,
   isSpaMode: boolean,
   basename: string | undefined,
   patchRoutes: DataRouter["patchRoutes"],
@@ -244,7 +247,7 @@ export async function fetchAndApplyManifestPatches(
   parentIds.forEach((parentId) =>
     patchRoutes(
       parentId || null,
-      createClientRoutes(patches, routeModules, null, isSpaMode, parentId)
+      createClientRoutes(patches, routeModules, null, ssr, isSpaMode, parentId)
     )
   );
 }

@@ -37,6 +37,8 @@ export const plugin: Plugin = {
         return function Wrapped() {
           const props = {
             params: useParams(),
+            loaderData: useLoaderData(),
+            actionData: useActionData(),
           };
           return h(HydrateFallback, props);
         };

@@ -1,15 +1,19 @@
 import fs from "node:fs";
 
+import ts from "dedent";
 import * as Path from "pathe";
 import pc from "picocolors";
 import type vite from "vite";
 
 import { createConfigLoader } from "../config/config";
 import type { RouteManifestEntry } from "../config/routes";
+import * as Babel from "../vite/babel";
 
 import { generate } from "./generate";
 import type { Context } from "./context";
 import { getTypesDir, getTypesPath } from "./paths";
+import * as Params from "./params";
+import * as Route from "./route";
 
 export async function run(rootDirectory: string) {
   const ctx = await createContext({ rootDirectory, watch: false });
@@ -92,4 +96,55 @@ async function writeAll(ctx: Context): Promise<void> {
     fs.mkdirSync(Path.dirname(typesPath), { recursive: true });
     fs.writeFileSync(typesPath, content);
   });
+
+  const registerPath = Path.join(typegenDir, "+register.ts");
+  fs.writeFileSync(registerPath, register(ctx));
+}
+
+function register(ctx: Context) {
+  const register = ts`
+    import "react-router";
+
+    declare module "react-router" {
+      interface Register {
+        params: Params;
+      }
+    }
+  `;
+
+  const { t } = Babel;
+
+  const typeParams = t.tsTypeAliasDeclaration(
+    t.identifier("Params"),
+    null,
+    t.tsTypeLiteral(
+      Object.values(ctx.config.routes)
+        .map((route) => {
+          // filter out pathless (layout) routes
+          if (route.id !== "root" && !route.path) return undefined;
+
+          const lineage = Route.lineage(ctx.config.routes, route);
+          const fullpath = Route.fullpath(lineage);
+          const params = Params.parse(fullpath);
+          return t.tsPropertySignature(
+            t.stringLiteral(fullpath),
+            t.tsTypeAnnotation(
+              t.tsTypeLiteral(
+                Object.entries(params).map(([param, isRequired]) => {
+                  const property = t.tsPropertySignature(
+                    t.stringLiteral(param),
+                    t.tsTypeAnnotation(t.tsStringKeyword())
+                  );
+                  property.optional = !isRequired;
+                  return property;
+                })
+              )
+            )
+          );
+        })
+        .filter((x): x is Babel.Babel.TSPropertySignature => x !== undefined)
+    )
+  );
+
+  return [register, Babel.generate(typeParams).code].join("\n\n");
 }

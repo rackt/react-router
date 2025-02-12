@@ -86,16 +86,42 @@ test.describe("typegen", () => {
           import { type RouteConfig, route } from "@react-router/dev/routes";
 
           export default [
-            route("repeated-params/:id/:id?/:id", "routes/repeated-params.tsx")
+            route("only-required/:id/:id", "routes/only-required.tsx"),
+            route("only-optional/:id?/:id?", "routes/only-optional.tsx"),
+            route("optional-then-required/:id?/:id", "routes/optional-then-required.tsx"),
+            route("required-then-optional/:id/:id?", "routes/required-then-optional.tsx"),
           ] satisfies RouteConfig;
         `,
-        "app/routes/repeated-params.tsx": tsx`
+        "app/routes/only-required.tsx": tsx`
           import type { Expect, Equal } from "../expect-type"
-          import type { Route } from "./+types/repeated-params"
+          import type { Route } from "./+types/only-required"
+          export function loader({ params }: Route.LoaderArgs) {
+            type Test = Expect<Equal<typeof params.id, string>>
+            return null
+          }
+        `,
+        "app/routes/only-optional.tsx": tsx`
+          import type { Expect, Equal } from "../expect-type"
+          import type { Route } from "./+types/only-optional"
+          export function loader({ params }: Route.LoaderArgs) {
+            type Test = Expect<Equal<typeof params.id, string | undefined>>
+            return null
+          }
+        `,
+        "app/routes/optional-then-required.tsx": tsx`
+          import type { Expect, Equal } from "../expect-type"
+          import type { Route } from "./+types/optional-then-required"
+          export function loader({ params }: Route.LoaderArgs) {
+            type Test = Expect<Equal<typeof params.id, string>>
+            return null
+          }
+        `,
+        "app/routes/required-then-optional.tsx": tsx`
+          import type { Expect, Equal } from "../expect-type"
+          import type { Route } from "./+types/required-then-optional"
 
           export function loader({ params }: Route.LoaderArgs) {
-            type Expected = [string, string | undefined, string]
-            type Test = Expect<Equal<typeof params.id, Expected>>
+            type Test = Expect<Equal<typeof params.id, string>>
             return null
           }
         `,
@@ -361,6 +387,62 @@ test.describe("typegen", () => {
       `,
     });
 
+    const proc = typecheck(cwd);
+    expect(proc.stdout.toString()).toBe("");
+    expect(proc.stderr.toString()).toBe("");
+    expect(proc.status).toBe(0);
+  });
+
+  test("href", async () => {
+    const cwd = await createProject({
+      "vite.config.ts": viteConfig,
+      "app/expect-type.ts": expectType,
+      "app/routes.ts": tsx`
+        import path from "node:path";
+        import { type RouteConfig, route } from "@react-router/dev/routes";
+
+        export default [
+          route("no-params", "routes/no-params.tsx"),
+          route("required-param/:req", "routes/required-param.tsx"),
+          route("optional-param/:opt?", "routes/optional-param.tsx"),
+          route("/leading-and-trailing-slash/", "routes/leading-and-trailing-slash.tsx"),
+          route("some-other-route", "routes/some-other-route.tsx"),
+        ] satisfies RouteConfig;
+      `,
+      "app/routes/no-params.tsx": tsx`
+        export default function Component() {}
+      `,
+      "app/routes/required-param.tsx": tsx`
+        export default function Component() {}
+      `,
+      "app/routes/optional-param.tsx": tsx`
+        export default function Component() {}
+      `,
+      "app/routes/leading-and-trailing-slash.tsx": tsx`
+        export default function Component() {}
+      `,
+      "app/routes/some-other-route.tsx": tsx`
+        import { href } from "react-router"
+
+        // @ts-expect-error
+        href("/does-not-exist")
+
+        href("/no-params")
+
+        // @ts-expect-error
+        href("/required-param/:req")
+        href("/required-param/:req", { req: "hello" })
+
+        href("/optional-param/:opt?")
+        href("/optional-param/:opt?", { opt: "hello" })
+
+        href("/leading-and-trailing-slash")
+        // @ts-expect-error
+        href("/leading-and-trailing-slash/")
+
+        export default function Component() {}
+      `,
+    });
     const proc = typecheck(cwd);
     expect(proc.stdout.toString()).toBe("");
     expect(proc.stderr.toString()).toBe("");

@@ -135,6 +135,8 @@ export type CreateClientActionArgs<T extends RouteInfo> =
 
 export type CreateHydrateFallbackProps<T extends RouteInfo> = {
   params: T["params"];
+  loaderData?: T["loaderData"];
+  actionData?: T["actionData"];
 };
 
 type Match<T extends RouteInfo> = Pretty<
