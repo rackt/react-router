@@ -1,0 +1,12 @@
+{
+  "name": "test-route-library",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./index.js"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "@react-router/dev": "workspace:*"
+  }
+}

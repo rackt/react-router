@@ -1,0 +1,42 @@
+{
+  "name": "integration-workspace-test-app-template",
+  "version": "0.0.0",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "scripts": {
+    "dev": "react-router dev",
+    "build": "react-router build",
+    "start": "react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc"
+  },
+  "dependencies": {
+    "@react-router/express": "workspace:*",
+    "@react-router/node": "workspace:*",
+    "@react-router/serve": "workspace:*",
+    "@vanilla-extract/css": "^1.10.0",
+    "@vanilla-extract/vite-plugin": "^3.9.2",
+    "express": "^4.19.2",
+    "isbot": "^5.1.11",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router": "workspace:*",
+    "test-route-library": "workspace:*",
+    "serialize-javascript": "^6.0.1"
+  },
+  "devDependencies": {
+    "@react-router/dev": "workspace:*",
+    "@react-router/fs-routes": "workspace:*",
+    "@react-router/remix-routes-option-adapter": "workspace:*",
+    "@types/react": "^18.2.20",
+    "@types/react-dom": "^18.2.7",
+    "eslint": "^8.38.0",
+    "typescript": "^5.1.6",
+    "vite": "^6.0.0",
+    "vite-env-only": "^3.0.1",
+    "vite-tsconfig-paths": "^4.2.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

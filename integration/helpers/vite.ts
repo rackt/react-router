@@ -6,7 +6,6 @@ import url from "node:url";
 import { createRequire } from "node:module";
 import { platform } from "node:os";
 import fse from "fs-extra";
-import stripIndent from "strip-indent";
 import waitOn from "wait-on";
 import getPort from "get-port";
 import shell from "shelljs";
@@ -15,13 +14,12 @@ import dedent from "dedent";
 import type { Page } from "@playwright/test";
 import { test as base, expect } from "@playwright/test";
 import type { Config } from "@react-router/dev/config";
+import { createTestDirectory, writeTestFiles } from "./filesystem";
 
 const require = createRequire(import.meta.url);
 
 const reactRouterBin = "node_modules/@react-router/dev/bin.js";
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
-const root = path.resolve(__dirname, "../..");
-const TMP_DIR = path.join(root, ".tmp/integration");
 
 export const reactRouterConfig = ({
   ssr,
@@ -157,24 +155,48 @@ export async function createProject(
   files: Record<string, string> = {},
   templateName: TemplateName = "vite-5-template"
 ) {
-  let projectName = `rr-${Math.random().toString(32).slice(2)}`;
-  let projectDir = path.join(TMP_DIR, projectName);
-  await fse.ensureDir(projectDir);
+  let projectDir = await createTestDirectory();
 
   // base template
   let templateDir = path.resolve(__dirname, templateName);
   await fse.copy(templateDir, projectDir, { errorOnExist: true });
 
   // user-defined files
-  await Promise.all(
-    Object.entries(files).map(async ([filename, contents]) => {
-      let filepath = path.join(projectDir, filename);
-      await fse.ensureDir(path.dirname(filepath));
-      await fse.writeFile(filepath, stripIndent(contents));
-    })
-  );
+  await writeTestFiles(files, projectDir);
 
   return projectDir;
+}
+
+type WorkspaceFileCreatorFn = (
+  libDir: string,
+  appDir: string
+) => { appFiles?: Record<string, string>; libFiles?: Record<string, string> };
+
+export async function createWorkspaceProject(files: WorkspaceFileCreatorFn) {
+  const workspaceDir = await createTestDirectory();
+
+  const workspaceTemplateDir = path.resolve(
+    __dirname,
+    "workspace-routes-template"
+  );
+  await fse.copy(workspaceTemplateDir, workspaceDir, { errorOnExist: true });
+
+  const appProjectDir = path.resolve(workspaceDir, "apps", "test-app");
+  const libProjectDir = path.resolve(workspaceDir, "libs", "test-route-library");
+
+  const userFiles = files(libProjectDir, appProjectDir);
+  if (userFiles.libFiles) {
+    await writeTestFiles(userFiles.libFiles, libProjectDir);
+  }
+  if (userFiles.appFiles) {
+    await writeTestFiles(userFiles.appFiles, appProjectDir);
+  }
+
+  return {
+    appProjectDir,
+    libProjectDir,
+    workspaceDir,
+  };
 }
 
 // Avoid "Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env
