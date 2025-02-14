@@ -557,7 +557,7 @@ export interface UIMatch<Data = unknown, Handle = unknown> {
   id: string;
   pathname: string;
   params: AgnosticRouteMatch["params"];
-  data: Data;
+  data: Data | undefined;
   handle: Handle;
 }
 
