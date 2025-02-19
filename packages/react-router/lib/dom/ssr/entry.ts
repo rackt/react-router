@@ -31,6 +31,8 @@ export interface FrameworkContextObject {
         error?: unknown;
       }
     >;
+    streamFinished?: boolean;
+    nonce?: string;
   };
 }
 
@@ -41,7 +43,9 @@ export interface EntryContext extends FrameworkContextObject {
   serverHandoffStream?: ReadableStream<Uint8Array>;
 }
 
-export interface FutureConfig {}
+export interface FutureConfig {
+  turboV3?: boolean;
+}
 
 export interface AssetsManifest {
   entry: {

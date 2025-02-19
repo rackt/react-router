@@ -28,6 +28,10 @@ if (!globalThis.TextEncoderStream) {
   const { TextEncoderStream } = require("node:stream/web");
   globalThis.TextEncoderStream = TextEncoderStream;
 }
+if (!globalThis.TextDecoderStream) {
+  const { TextDecoderStream } = require("node:stream/web");
+  globalThis.TextDecoderStream = TextDecoderStream;
+}
 
 if (!globalThis.TransformStream) {
   const { TransformStream } = require("node:stream/web");

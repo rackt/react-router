@@ -180,7 +180,7 @@ export const createRequestHandler: CreateRequestHandlerFunction = (
       Object.assign(params, matches[0].params);
     }
 
-    let response: Response;
+    let response: Response | undefined;
     if (url.pathname.endsWith(".data")) {
       let handlerUrl = new URL(request.url);
       handlerUrl.pathname = normalizedPath;
@@ -229,7 +229,8 @@ export const createRequestHandler: CreateRequestHandlerFunction = (
               result,
               request.signal,
               _build.entry.module.streamTimeout,
-              serverMode
+              serverMode,
+              _build.future.turboV3 ?? false
             ),
             {
               status: SINGLE_FETCH_REDIRECT_STATUS,
@@ -266,6 +267,10 @@ export const createRequestHandler: CreateRequestHandlerFunction = (
         handleError,
         criticalCss
       );
+    }
+
+    if (!response) {
+      return new Response("Unknown Server Error", { status: 500 });
     }
 
     if (request.method === "HEAD") {
@@ -362,7 +367,8 @@ async function handleSingleFetchRequest(
       result,
       request.signal,
       build.entry.module.streamTimeout,
-      serverMode
+      serverMode,
+      build.future.turboV3 ?? false
     ),
     {
       status: status || 200,
@@ -413,6 +419,11 @@ async function handleDocumentRequest(
     context.errors = sanitizeErrors(context.errors, serverMode);
   }
 
+  let renderMeta: {
+    didRenderScripts?: boolean;
+    nonce?: string;
+  } = {};
+
   // Server UI state to send to the client.
   // - When single fetch is enabled, this is streamed down via `serverHandoffStream`
   // - Otherwise it's stringified into `serverHandoffString`
@@ -437,9 +448,10 @@ async function handleDocumentRequest(
       state,
       request.signal,
       build.entry.module.streamTimeout,
-      serverMode
+      serverMode,
+      build.future.turboV3 ?? false
     ),
-    renderMeta: {},
+    renderMeta,
     future: build.future,
     ssr: build.ssr,
     isSpaMode,
@@ -447,8 +459,11 @@ async function handleDocumentRequest(
   };
 
   let handleDocumentRequestFunction = build.entry.module.default;
+
+  let response: Response;
+
   try {
-    return await handleDocumentRequestFunction(
+    response = await handleDocumentRequestFunction(
       request,
       context.statusCode,
       headers,
@@ -509,13 +524,14 @@ async function handleDocumentRequest(
         state,
         request.signal,
         build.entry.module.streamTimeout,
-        serverMode
+        serverMode,
+        build.future.turboV3 ?? false
       ),
-      renderMeta: {},
+      renderMeta,
     };
 
     try {
-      return await handleDocumentRequestFunction(
+      response = await handleDocumentRequestFunction(
         request,
         context.statusCode,
         headers,
@@ -524,9 +540,40 @@ async function handleDocumentRequest(
       );
     } catch (error: any) {
       handleError(error);
-      return returnLastResortErrorResponse(error, serverMode);
+      response = returnLastResortErrorResponse(error, serverMode);
     }
   }
+
+  if (!response) {
+    return undefined;
+  }
+
+  return new Response(
+    response.body?.pipeThrough(
+      new TransformStream({
+        flush(controller) {
+          // If we render scripts, react's render might be aborted leaving the stream transfer
+          // open in the browser causing promises to never resolve. This will error the stream
+          // in the browser and allow the promises to settle.
+          if (renderMeta.didRenderScripts) {
+            const script = renderMeta.nonce
+              ? `<script nonce="${renderMeta.nonce}">`
+              : "<script>";
+            controller.enqueue(
+              new TextEncoder().encode(
+                `${script}if (!window.__reactRouterContext.streamDone)window.__reactRouterContext.streamController.error(new Error("Server aborted."));</script>`
+              )
+            );
+          }
+        },
+      })
+    ),
+    {
+      headers: response.headers,
+      status: response.status,
+      statusText: response.statusText,
+    }
+  );
 }
 
 async function handleResourceRequest(

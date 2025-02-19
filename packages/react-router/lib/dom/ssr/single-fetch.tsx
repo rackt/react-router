@@ -1,5 +1,4 @@
 import * as React from "react";
-import { decode } from "turbo-stream";
 import type { Router as DataRouter } from "../../router/router";
 import { isResponse } from "../../router/router";
 import type {
@@ -108,7 +107,7 @@ export function StreamTransfer({
         <script
           nonce={nonce}
           dangerouslySetInnerHTML={{
-            __html: `window.__reactRouterContext.streamController.close();`,
+            __html: `window.__reactRouterContext.streamDone=true;window.__reactRouterContext.streamController.close();`,
           }}
         />
       </>
@@ -134,13 +133,14 @@ export function StreamTransfer({
 export function getSingleFetchDataStrategy(
   manifest: AssetsManifest,
   routeModules: RouteModules,
+  getRouter: () => DataRouter,
   ssr: boolean,
-  getRouter: () => DataRouter
+  turboV3: boolean
 ): DataStrategyFunction {
   return async ({ request, matches, fetcherKey }) => {
     // Actions are simple and behave the same for navigations and fetchers
     if (request.method !== "GET") {
-      return singleFetchActionStrategy(request, matches);
+      return singleFetchActionStrategy(request, matches, turboV3);
     }
 
     if (!ssr) {
@@ -212,7 +212,7 @@ export function getSingleFetchDataStrategy(
 
     // Fetcher loads are singular calls to one loader
     if (fetcherKey) {
-      return singleFetchLoaderFetcherStrategy(request, matches);
+      return singleFetchLoaderFetcherStrategy(request, matches, turboV3);
     }
 
     // Navigational loads are more complex...
@@ -222,7 +222,8 @@ export function getSingleFetchDataStrategy(
       ssr,
       getRouter(),
       request,
-      matches
+      matches,
+      turboV3
     );
   };
 }
@@ -231,7 +232,8 @@ export function getSingleFetchDataStrategy(
 // navigations and fetchers)
 async function singleFetchActionStrategy(
   request: Request,
-  matches: DataStrategyFunctionArgs["matches"]
+  matches: DataStrategyFunctionArgs["matches"],
+  turboV3: boolean
 ) {
   let actionMatch = matches.find((m) => m.shouldLoad);
   invariant(actionMatch, "No action match found");
@@ -240,7 +242,7 @@ async function singleFetchActionStrategy(
     let result = await handler(async () => {
       let url = singleFetchUrl(request.url);
       let init = await createRequestInit(request);
-      let { data, status } = await fetchAndDecode(url, init);
+      let { data, status } = await fetchAndDecode(url, init, turboV3);
       actionStatus = status;
       return unwrapSingleFetchResult(
         data as SingleFetchResult,
@@ -272,7 +274,8 @@ async function singleFetchLoaderNavigationStrategy(
   ssr: boolean,
   router: DataRouter,
   request: Request,
-  matches: DataStrategyFunctionArgs["matches"]
+  matches: DataStrategyFunctionArgs["matches"],
+  turboV3: boolean
 ) {
   // Track which routes need a server load - in case we need to tack on a
   // `_routes` param
@@ -339,7 +342,8 @@ async function singleFetchLoaderNavigationStrategy(
               handler,
               url,
               init,
-              m.route.id
+              m.route.id,
+              turboV3
             );
             results[m.route.id] = { type: "data", result };
           } catch (e) {
@@ -403,7 +407,7 @@ async function singleFetchLoaderNavigationStrategy(
         );
       }
 
-      let data = await fetchAndDecode(url, init);
+      let data = await fetchAndDecode(url, init, turboV3);
       singleFetchDfd.resolve(data.data as SingleFetchResults);
     } catch (e) {
       singleFetchDfd.reject(e as Error);
@@ -418,14 +422,21 @@ async function singleFetchLoaderNavigationStrategy(
 // Fetcher loader calls are much simpler than navigational loader calls
 async function singleFetchLoaderFetcherStrategy(
   request: Request,
-  matches: DataStrategyFunctionArgs["matches"]
+  matches: DataStrategyFunctionArgs["matches"],
+  turboV3: boolean
 ) {
   let fetcherMatch = matches.find((m) => m.shouldLoad);
   invariant(fetcherMatch, "No fetcher match found");
   let result = await fetcherMatch.resolve(async (handler) => {
     let url = stripIndexParam(singleFetchUrl(request.url));
     let init = await createRequestInit(request);
-    return fetchSingleLoader(handler, url, init, fetcherMatch!.route.id);
+    return fetchSingleLoader(
+      handler,
+      url,
+      init,
+      fetcherMatch!.route.id,
+      turboV3
+    );
   });
   return { [fetcherMatch.route.id]: result };
 }
@@ -436,12 +447,13 @@ function fetchSingleLoader(
   >[0],
   url: URL,
   init: RequestInit,
-  routeId: string
+  routeId: string,
+  turboV3: boolean
 ) {
   return handler(async () => {
     let singleLoaderUrl = new URL(url);
     singleLoaderUrl.searchParams.set("_routes", routeId);
-    let { data } = await fetchAndDecode(singleLoaderUrl, init);
+    let { data } = await fetchAndDecode(singleLoaderUrl, init, turboV3);
     return unwrapSingleFetchResults(data as SingleFetchResults, routeId);
   });
 }
@@ -486,7 +498,8 @@ export function singleFetchUrl(reqUrl: URL | string) {
 
 async function fetchAndDecode(
   url: URL,
-  init: RequestInit
+  init: RequestInit,
+  turboV3: boolean
 ): Promise<{ status: number; data: unknown }> {
   let res = await fetch(url, init);
 
@@ -515,8 +528,8 @@ async function fetchAndDecode(
   invariant(res.body, "No response body to decode");
 
   try {
-    let decoded = await decodeViaTurboStream(res.body, window);
-    return { status: res.status, data: decoded.value };
+    let decoded: any = await decodeViaTurboStream(res.body, window, turboV3);
+    return { status: res.status, data: decoded };
   } catch (e) {
     // Can't clone after consuming the body via turbo-stream so we can't
     // include the body here.  In an ideal world we'd look for a turbo-stream
@@ -530,10 +543,39 @@ async function fetchAndDecode(
 
 // Note: If you change this function please change the corresponding
 // encodeViaTurboStream function in server-runtime
-export function decodeViaTurboStream(
+export async function decodeViaTurboStream(
   body: ReadableStream<Uint8Array>,
-  global: Window | typeof globalThis
+  global: Window | typeof globalThis,
+  turboV3: boolean
 ) {
+  if (turboV3) {
+    const { decode } = await import("turbo-stream");
+    return decode(body.pipeThrough(new TextDecoderStream()), {
+      plugins: [
+        (type: string, ...rest: unknown[]) => {
+          if (type === "ErrorResponse") {
+            let [data, status, statusText] = rest as [
+              unknown,
+              number,
+              string | undefined
+            ];
+            return {
+              value: new ErrorResponseImpl(status, statusText, data),
+            };
+          }
+
+          if (type === "SingleFetchRedirect") {
+            return { value: { [SingleFetchRedirectSymbol]: rest[0] } };
+          }
+        },
+      ],
+    });
+  }
+
+  const { decode } = await import(
+    // @ts-expect-error - bad tsconfig
+    "../../../vendor/turbo-stream-v2/turbo-stream"
+  );
   return decode(body, {
     plugins: [
       (type: string, ...rest: unknown[]) => {
@@ -580,7 +622,7 @@ export function decodeViaTurboStream(
         }
       },
     ],
-  });
+  }).then((res: { value: unknown }) => res.value);
 }
 
 function unwrapSingleFetchResults(

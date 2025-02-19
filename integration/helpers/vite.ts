@@ -29,6 +29,7 @@ export const reactRouterConfig = ({
   prerender,
   appDirectory,
   splitRouteModules,
+  turboV3,
   viteEnvironmentApi,
 }: {
   ssr?: boolean;
@@ -38,6 +39,7 @@ export const reactRouterConfig = ({
   splitRouteModules?: NonNullable<
     Config["future"]
   >["unstable_splitRouteModules"];
+  turboV3?: boolean;
   viteEnvironmentApi?: boolean;
 }) => {
   let config: Config = {
@@ -46,6 +48,7 @@ export const reactRouterConfig = ({
     prerender,
     appDirectory,
     future: {
+      turboV3,
       unstable_splitRouteModules: splitRouteModules,
       unstable_viteEnvironmentApi: viteEnvironmentApi,
     },

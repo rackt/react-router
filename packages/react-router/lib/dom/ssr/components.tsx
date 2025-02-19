@@ -648,6 +648,7 @@ export function Scripts(props: ScriptsProps) {
   // fetch streaming scripts
   if (renderMeta) {
     renderMeta.didRenderScripts = true;
+    renderMeta.nonce = props.nonce;
   }
 
   let matches = getActiveMatches(routerMatches, null, isSpaMode);

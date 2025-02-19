@@ -24,6 +24,8 @@ import { ServerMode } from "./mode";
 import { getDocumentHeaders } from "./headers";
 import type { ServerBuild } from "./build";
 
+import { encode as encodeV2 } from "../../vendor/turbo-stream-v2/turbo-stream";
+
 export type { SingleFetchResult, SingleFetchResults };
 export { SingleFetchRedirectSymbol };
 
@@ -309,7 +311,8 @@ export function encodeViaTurboStream(
   data: any,
   requestSignal: AbortSignal,
   streamTimeout: number | undefined,
-  serverMode: ServerMode
+  serverMode: ServerMode,
+  turboV3: boolean
 ) {
   let controller = new AbortController();
   // How long are we willing to wait for all of the promises in `data` to resolve
@@ -325,7 +328,32 @@ export function encodeViaTurboStream(
   );
   requestSignal.addEventListener("abort", () => clearTimeout(timeoutId));
 
-  return encode(data, {
+  if (turboV3) {
+    return encode(data, {
+      signal: controller.signal,
+      redactErrors:
+        serverMode === ServerMode.Development
+          ? false
+          : "Unexpected Server Error",
+      plugins: [
+        (value) => {
+          if (value instanceof ErrorResponseImpl) {
+            let { data, status, statusText } = value;
+            return ["ErrorResponse", data, status, statusText];
+          }
+
+          if (SingleFetchRedirectSymbol in (value as any)) {
+            return [
+              "SingleFetchRedirect",
+              (value as any)[SingleFetchRedirectSymbol],
+            ];
+          }
+        },
+      ],
+    }).pipeThrough(new TextEncoderStream());
+  }
+
+  return encodeV2(data, {
     signal: controller.signal,
     plugins: [
       (value) => {

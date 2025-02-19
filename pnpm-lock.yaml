@@ -618,8 +618,8 @@ importers:
         specifier: ^2.6.0
         version: 2.6.0
       turbo-stream:
-        specifier: 2.4.0
-        version: 2.4.0
+        specifier: ^3.1.0
+        version: 3.1.0
     devDependencies:
       '@types/set-cookie-parser':
         specifier: ^2.4.1
@@ -7653,8 +7653,8 @@ packages:
     engines: {node: '>=8.0.0'}
     hasBin: true
 
-  turbo-stream@2.4.0:
-    resolution: {integrity: sha512-FHncC10WpBd2eOmGwpmQsWLDoK4cqsA/UT/GqNoaKOQnT8uzhtCbg3EoUDMvqpOSAI0S26mr0rkjzbOO6S3v1g==}
+  turbo-stream@3.1.0:
+    resolution: {integrity: sha512-tVI25WEXl4fckNEmrq70xU1XumxUwEx/FZD5AgEcV8ri7Wvrg2o7GEq8U7htrNx3CajciGm+kDyhRf5JB6t7/A==}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -16028,7 +16028,7 @@ snapshots:
       wcwidth: 1.0.1
       yargs: 17.7.2
 
-  turbo-stream@2.4.0: {}
+  turbo-stream@3.1.0: {}
 
   type-check@0.4.0:
     dependencies:

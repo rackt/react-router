@@ -84,6 +84,7 @@ type ServerBundlesBuildManifest = BaseBuildManifest & {
 type ServerModuleFormat = "esm" | "cjs";
 
 interface FutureConfig {
+  turboV3: boolean;
   unstable_optimizeDeps: boolean;
   /**
    * Automatically split route modules into multiple chunks when possible.
@@ -488,6 +489,7 @@ async function resolveConfig({
   }
 
   let future: FutureConfig = {
+    turboV3: reactRouterUserConfig.future?.turboV3 ?? false,
     unstable_optimizeDeps:
       reactRouterUserConfig.future?.unstable_optimizeDeps ?? false,
     unstable_splitRouteModules:

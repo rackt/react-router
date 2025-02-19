@@ -7,7 +7,6 @@ module.exports = {
   },
   rules: {
     strict: 0,
-    "no-restricted-syntax": ["error", "LogicalExpression[operator='??']"],
     "no-restricted-globals": [
       "error",
       { name: "__dirname", message: restrictedGlobalsError },
