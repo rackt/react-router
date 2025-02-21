@@ -2401,6 +2401,12 @@ export function createRouter(init: RouterInit): Router {
 
     let redirect = findRedirect(loaderResults);
     if (redirect) {
+      // Since we let revalidations complete even if the submitting fetcher was
+      // deleted, only put it back to idle if it hasn't been deleted
+      if (state.fetchers.has(key)) {
+        let doneFetcher = getDoneFetcher(actionResult.data);
+        state.fetchers.set(key, doneFetcher);
+      }
       return startRedirectNavigation(
         revalidationRequest,
         redirect.result,
@@ -2415,6 +2421,14 @@ export function createRouter(init: RouterInit): Router {
       // fetchRedirectIds so it doesn't get revalidated on the next set of
       // loader executions
       fetchRedirectIds.add(redirect.key);
+
+      // Since we let revalidations complete even if the submitting fetcher was
+      // deleted, only put it back to idle if it hasn't been deleted
+      if (state.fetchers.has(key)) {
+        let doneFetcher = getDoneFetcher(actionResult.data);
+        state.fetchers.set(key, doneFetcher);
+      }
+
       return startRedirectNavigation(
         revalidationRequest,
         redirect.result,
