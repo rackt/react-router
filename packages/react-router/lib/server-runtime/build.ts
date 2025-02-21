@@ -1,11 +1,14 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "../router/utils";
 import type {
   AssetsManifest,
+  CriticalCss,
   EntryContext,
   FutureConfig,
 } from "../dom/ssr/entry";
 import type { ServerRouteManifest } from "./routes";
 import type { AppLoadContext } from "./data";
+
+type OptionalCriticalCss = CriticalCss | undefined;
 
 /**
  * The output of the compiler for the server build.
@@ -21,6 +24,9 @@ export interface ServerBuild {
   assetsBuildDirectory: string;
   future: FutureConfig;
   ssr: boolean;
+  getCriticalCss?: (args: {
+    pathname: string;
+  }) => OptionalCriticalCss | Promise<OptionalCriticalCss>;
   /**
    * @deprecated This is now done via a custom header during prerendering
    */

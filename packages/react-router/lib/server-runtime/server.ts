@@ -13,7 +13,7 @@ import {
 } from "../router/router";
 import type { AppLoadContext } from "./data";
 import type { HandleErrorFunction, ServerBuild } from "./build";
-import type { EntryContext } from "../dom/ssr/entry";
+import type { CriticalCss, EntryContext } from "../dom/ssr/entry";
 import { createEntryRouteModules } from "./entry";
 import { sanitizeErrors, serializeError, serializeErrors } from "./errors";
 import { ServerMode, isServerMode } from "./mode";
@@ -263,10 +263,17 @@ export const createRequestHandler: CreateRequestHandlerFunction = (
         handleError
       );
     } else {
-      let criticalCss =
-        mode === ServerMode.Development
-          ? await getDevServerHooks()?.getCriticalCss?.(_build, url.pathname)
-          : undefined;
+      let { pathname } = url;
+
+      let criticalCss: CriticalCss | undefined = undefined;
+      if (_build.getCriticalCss) {
+        criticalCss = await _build.getCriticalCss({ pathname });
+      } else if (
+        mode === ServerMode.Development &&
+        getDevServerHooks()?.getCriticalCss
+      ) {
+        criticalCss = await getDevServerHooks()?.getCriticalCss?.(pathname);
+      }
 
       response = await handleDocumentRequest(
         serverMode,
@@ -389,7 +396,7 @@ async function handleDocumentRequest(
   request: Request,
   loadContext: AppLoadContext,
   handleError: (err: unknown) => void,
-  criticalCss?: string
+  criticalCss?: CriticalCss
 ) {
   let isSpaMode = request.headers.has("X-React-Router-SPA-Mode");
   let context: Awaited<ReturnType<typeof staticHandler.query>>;

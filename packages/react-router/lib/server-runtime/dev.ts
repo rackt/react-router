@@ -1,10 +1,5 @@
-import type { ServerBuild } from "./build";
-
 type DevServerHooks = {
-  getCriticalCss?: (
-    build: ServerBuild,
-    pathname: string
-  ) => Promise<string | undefined>;
+  getCriticalCss?: (pathname: string) => Promise<string | undefined>;
   processRequestError?: (error: unknown) => void;
 };
 

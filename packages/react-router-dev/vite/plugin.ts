@@ -36,7 +36,7 @@ import type { Cache } from "./cache";
 import { generate, parse } from "./babel";
 import type { NodeRequestHandler } from "./node-adapter";
 import { fromNodeRequest, toNodeRequest } from "./node-adapter";
-import { getStylesForUrl, isCssModulesFile } from "./styles";
+import { getStylesForPathname, isCssModulesFile } from "./styles";
 import * as VirtualModule from "./virtual-module";
 import { resolveFileUrl } from "./resolve-file-url";
 import { combineURLs } from "./combine-urls";
@@ -700,7 +700,22 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
         }`;
           })
           .join(",\n  ")}
-      };`;
+      };
+      ${
+        ctx.reactRouterConfig.future.unstable_viteEnvironmentApi &&
+        viteCommand === "serve"
+          ? `
+              export const getCriticalCss = ({ pathname }) => {
+                return {
+                  rel: "stylesheet",
+                  href: "${
+                    viteUserConfig.base ?? "/"
+                  }@react-router/critical.css?pathname=" + pathname,
+                };
+              }
+            `
+          : ""
+      }`;
   };
 
   let loadViteManifest = async (directory: string) => {
@@ -1363,15 +1378,14 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
         setDevServerHooks({
           // Give the request handler access to the critical CSS in dev to avoid a
           // flash of unstyled content since Vite injects CSS file contents via JS
-          getCriticalCss: async (build, url) => {
-            return getStylesForUrl({
+          getCriticalCss: async (pathname) => {
+            return getStylesForPathname({
               rootDirectory: ctx.rootDirectory,
               entryClientFilePath: ctx.entryClientFilePath,
               reactRouterConfig: ctx.reactRouterConfig,
               viteDevServer,
               loadCssContents,
-              build,
-              url,
+              pathname,
             });
           },
           // If an error is caught within the request handler, let Vite fix the
@@ -1418,6 +1432,30 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
             }
           }
         );
+
+        if (ctx.reactRouterConfig.future.unstable_viteEnvironmentApi) {
+          viteDevServer.middlewares.use(async (req, res, next) => {
+            let [reqPathname, reqSearch] = (req.url ?? "").split("?");
+            if (reqPathname === "/@react-router/critical.css") {
+              let pathname = new URLSearchParams(reqSearch).get("pathname");
+              if (!pathname) {
+                return next("No pathname provided");
+              }
+              let css = await getStylesForPathname({
+                rootDirectory: ctx.rootDirectory,
+                entryClientFilePath: ctx.entryClientFilePath,
+                reactRouterConfig: ctx.reactRouterConfig,
+                viteDevServer,
+                loadCssContents,
+                pathname,
+              });
+              res.setHeader("Content-Type", "text/css");
+              res.end(css);
+            } else {
+              next();
+            }
+          });
+        }
 
         return () => {
           // Let user servers handle SSR requests in middleware mode,

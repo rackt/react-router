@@ -241,8 +241,11 @@ export function Links() {
 
   return (
     <>
-      {criticalCss ? (
+      {typeof criticalCss === "string" ? (
         <style dangerouslySetInnerHTML={{ __html: criticalCss }} />
+      ) : null}
+      {typeof criticalCss === "object" ? (
+        <link rel="stylesheet" href={criticalCss.href} />
       ) : null}
       {keyedLinks.map(({ key, link }) =>
         isPageLinkDescriptor(link) ? (

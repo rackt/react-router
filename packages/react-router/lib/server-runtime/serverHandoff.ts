@@ -1,5 +1,5 @@
 import type { HydrationState } from "../router/router";
-import type { FutureConfig } from "../dom/ssr/entry";
+import type { CriticalCss, FutureConfig } from "../dom/ssr/entry";
 import { escapeHtml } from "./markup";
 
 type ValidateShape<T, Shape> =
@@ -18,7 +18,7 @@ export function createServerHandoffString<T>(serverHandoff: {
   // Don't allow StaticHandlerContext to be passed in verbatim, since then
   // we'd end up including duplicate info
   state?: ValidateShape<T, HydrationState>;
-  criticalCss?: string;
+  criticalCss?: CriticalCss;
   basename: string | undefined;
   future: FutureConfig;
   ssr: boolean;

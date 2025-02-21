@@ -1,14 +1,11 @@
 import * as path from "node:path";
-import type { ServerBuild } from "react-router";
 import { matchRoutes } from "react-router";
 import type { ModuleNode, ViteDevServer } from "vite";
 
 import type { ResolvedReactRouterConfig } from "../config/config";
+import type { RouteManifest, RouteManifestEntry } from "../config/routes";
 import type { LoadCssContents } from "./plugin";
 import { resolveFileUrl } from "./resolve-file-url";
-
-type ServerRouteManifest = ServerBuild["routes"];
-type ServerRoute = ServerRouteManifest[string];
 
 // Style collection logic adapted from solid-start: https://github.com/solidjs/solid-start
 
@@ -163,8 +160,8 @@ const findDeps = async (
   await Promise.all(branches);
 };
 
-const groupRoutesByParentId = (manifest: ServerRouteManifest) => {
-  let routes: Record<string, NonNullable<ServerRoute>[]> = {};
+const groupRoutesByParentId = (manifest: RouteManifest) => {
+  let routes: Record<string, Array<RouteManifestEntry>> = {};
 
   Object.values(manifest).forEach((route) => {
     if (route) {
@@ -179,45 +176,62 @@ const groupRoutesByParentId = (manifest: ServerRouteManifest) => {
   return routes;
 };
 
-// Create a map of routes by parentId to use recursively instead of
-// repeatedly filtering the manifest.
-const createRoutes = (
-  manifest: ServerRouteManifest,
+type RouteManifestEntryWithChildren = Omit<RouteManifestEntry, "index"> &
+  (
+    | { index?: false | undefined; children: RouteManifestEntryWithChildren[] }
+    | { index: true; children?: never }
+  );
+
+const createRoutesWithChildren = (
+  manifest: RouteManifest,
   parentId: string = "",
   routesByParentId = groupRoutesByParentId(manifest)
-): NonNullable<ServerRoute>[] => {
+): RouteManifestEntryWithChildren[] => {
   return (routesByParentId[parentId] || []).map((route) => ({
     ...route,
-    children: createRoutes(manifest, route.id, routesByParentId),
+    ...(route.index
+      ? {
+          index: true,
+        }
+      : {
+          index: false,
+          children: createRoutesWithChildren(
+            manifest,
+            route.id,
+            routesByParentId
+          ),
+        }),
   }));
 };
 
-export const getStylesForUrl = async ({
+export const getStylesForPathname = async ({
   viteDevServer,
   rootDirectory,
   reactRouterConfig,
   entryClientFilePath,
   loadCssContents,
-  build,
-  url,
+  pathname,
 }: {
   viteDevServer: ViteDevServer;
   rootDirectory: string;
-  reactRouterConfig: Pick<ResolvedReactRouterConfig, "appDirectory" | "routes">;
+  reactRouterConfig: Pick<
+    ResolvedReactRouterConfig,
+    "appDirectory" | "routes" | "basename"
+  >;
   entryClientFilePath: string;
   loadCssContents: LoadCssContents;
-  build: ServerBuild;
-  url: string | undefined;
+  pathname: string | undefined;
 }): Promise<string | undefined> => {
-  if (url === undefined || url.includes("?_data=")) {
+  if (pathname === undefined || pathname.includes("?_data=")) {
     return undefined;
   }
 
-  let routes = createRoutes(build.routes);
+  let routesWithChildren = createRoutesWithChildren(reactRouterConfig.routes);
   let appPath = path.relative(process.cwd(), reactRouterConfig.appDirectory);
   let documentRouteFiles =
-    matchRoutes(routes, url, build.basename)?.map((match) =>
-      path.resolve(appPath, reactRouterConfig.routes[match.route.id].file)
+    matchRoutes(routesWithChildren, pathname, reactRouterConfig.basename)?.map(
+      (match) =>
+        path.resolve(appPath, reactRouterConfig.routes[match.route.id].file)
     ) ?? [];
 
   let styles = await getStylesForFiles({

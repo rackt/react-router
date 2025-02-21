@@ -1,11 +1,11 @@
 import type { HydrationState, Router as DataRouter } from "../router/router";
-import type { AssetsManifest, FutureConfig } from "./ssr/entry";
+import type { AssetsManifest, CriticalCss, FutureConfig } from "./ssr/entry";
 import type { RouteModules } from "./ssr/routeModules";
 
 export type WindowReactRouterContext = {
   basename?: string;
   state: HydrationState;
-  criticalCss?: string;
+  criticalCss?: CriticalCss;
   future: FutureConfig;
   ssr: boolean;
   isSpaMode: boolean;
