@@ -109,6 +109,27 @@ describe("Cookie session storage", () => {
     expect(session.get("user")).toBeUndefined();
   });
 
+  it("returns an empty session for cookies that have been tampered with", async () => {
+    let { getSession, commitSession } = createCookieSessionStorage({
+      cookie: {
+        secrets: ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+        encrypt: true,
+      },
+    });
+    let session = await getSession();
+    session.set("user", "mjackson");
+
+    expect(session.get("user")).toEqual("mjackson");
+
+    let setCookie = await commitSession(session);
+    session = await getSession(
+      // Tamper with the session cookie...
+      getCookieFromSetCookie(setCookie).slice(0, -1)
+    );
+
+    expect(session.get("user")).toBeUndefined();
+  });
+
   it('"makes the default path of cookies to be /', async () => {
     let { getSession, commitSession } = createCookieSessionStorage({
       cookie: { secrets: ["secret1"] },
@@ -211,6 +232,38 @@ describe("Cookie session storage", () => {
       expect(session.get("user")).toEqual("mjackson");
 
       // New cookies should be signed using the new secret.
+      let setCookie2 = await storage.commitSession(session);
+      expect(setCookie2).not.toEqual(setCookie);
+    });
+
+    it("decrypts old session cookies using the old key and encrypts new cookies using the new key", async () => {
+      let { getSession, commitSession } = createCookieSessionStorage({
+        cookie: { secrets: ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"] },
+      });
+      let session = await getSession();
+      session.set("user", "mjackson");
+      let setCookie = await commitSession(session);
+      session = await getSession(getCookieFromSetCookie(setCookie));
+
+      expect(session.get("user")).toEqual("mjackson");
+
+      // A new secret enters the rotation...
+      let storage = createCookieSessionStorage({
+        cookie: {
+          secrets: [
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          ],
+        },
+      });
+      getSession = storage.getSession;
+      commitSession = storage.commitSession;
+
+      // Old cookies should still work with the old key.
+      session = await storage.getSession(getCookieFromSetCookie(setCookie));
+      expect(session.get("user")).toEqual("mjackson");
+
+      // New cookies should be encrypted using the new key.
       let setCookie2 = await storage.commitSession(session);
       expect(setCookie2).not.toEqual(setCookie);
     });
