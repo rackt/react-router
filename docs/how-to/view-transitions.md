@@ -204,5 +204,23 @@ function NavImage(props: { src: string; idx: number }) {
 }
 ```
 
+### 3. Using `viewTransition` for Custom Transition Styles
+
+You can further customize the transition by specifying an array of view transition types. These types are passed to document.startViewTransition() and allow you to apply targeted CSS animations.
+
+For example, you can set different animation styles like so:
+
+```tsx
+<Link
+  to="/about"
+  viewTransition={{ types: ["fade", "slide"] }}
+>
+  About
+</Link>
+```
+
+When using this custom variation of the prop, React Router will pass the specified types to the underlying View Transitions API call, enabling your CSS to target these transition types and define custom animations.
+[Read more about view transition types](https://developer.chrome.com/blog/view-transitions-update-io24#view-transition-types)
+
 [view-transitions-api]: https://developer.mozilla.org/en-US/docs/Web/API/ViewTransition
 [view-transitions-guide]: https://developer.chrome.com/docs/web-platform/view-transitions

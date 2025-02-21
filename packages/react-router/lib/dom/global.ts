@@ -26,6 +26,16 @@ export interface ViewTransition {
   skipTransition(): void;
 }
 
+export type ViewTransitionOptions =
+  | boolean
+  | {
+      /**
+       * An array of transition type strings (e.g. "slide", "forwards", "backwards")
+       * that will be applied to the navigation.
+       */
+      types?: string[];
+    };
+
 declare global {
   // TODO: v7 - Can this go away in favor of "just use remix"?
   var __staticRouterHydrationData: HydrationState | undefined;
@@ -33,6 +43,10 @@ declare global {
   var __reactRouterVersion: string;
   interface Document {
     startViewTransition(cb: () => Promise<void> | void): ViewTransition;
+    startViewTransition(options: {
+      update: () => Promise<void> | void;
+      types: string[];
+    }): ViewTransition;
   }
   var __reactRouterContext: WindowReactRouterContext | undefined;
   var __reactRouterManifest: AssetsManifest | undefined;

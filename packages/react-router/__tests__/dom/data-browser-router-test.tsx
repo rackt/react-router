@@ -7861,6 +7861,57 @@ function testDomRouter(
           { state: "idle" },
         ]);
       });
+
+      it("applies viewTransitionTypes when specified", async () => {
+        // Create a custom window with a spy on document.startViewTransition
+        let testWindow = getWindow("/");
+        const startViewTransitionSpy = jest.fn((arg: any) => {
+          if (typeof arg === "function") {
+            throw new Error(
+              "Expected an options object, but received a function."
+            );
+          }
+          // Assert that the options include the correct viewTransitionTypes.
+          expect(arg.types).toEqual(["fade", "slide"]);
+          // Execute the update callback to trigger the transition update.
+          arg.update();
+          return {
+            ready: Promise.resolve(undefined),
+            finished: Promise.resolve(undefined),
+            updateCallbackDone: Promise.resolve(undefined),
+            skipTransition: () => {},
+          };
+        });
+        testWindow.document.startViewTransition = startViewTransitionSpy;
+
+        // Create a router with a Link that opts into view transitions and specifies viewTransitionTypes.
+        let router = createTestRouter(
+          [
+            {
+              path: "/",
+              Component() {
+                return (
+                  <div>
+                    <Link to="/a" viewTransition={{ types: ["fade", "slide"] }}>
+                      /a
+                    </Link>
+                    <Outlet />
+                  </div>
+                );
+              },
+              children: [{ path: "a", Component: () => <h1>A</h1> }],
+            },
+          ],
+          { window: testWindow }
+        );
+
+        render(<RouterProvider router={router} />);
+        fireEvent.click(screen.getByText("/a"));
+        await waitFor(() => screen.getByText("A"));
+
+        // Assert that document.startViewTransition was called once.
+        expect(startViewTransitionSpy).toHaveBeenCalledTimes(1);
+      });
     });
   });
 }
