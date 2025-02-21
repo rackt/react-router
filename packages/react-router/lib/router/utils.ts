@@ -285,6 +285,7 @@ export type AgnosticPatchRoutesOnNavigationFunctionArgs<
   signal: AbortSignal;
   path: string;
   matches: M[];
+  fetcherKey: string | undefined;
   patch: (routeId: string | null, children: O[]) => void;
 };
 
