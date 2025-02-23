@@ -47,7 +47,7 @@ export type ParamKeyValuePair = [string, string];
 export type URLSearchParamsInit =
   | string
   | ParamKeyValuePair[]
-  | Record<string, string | string[]>
+  | Record<string, undefined | string | string[]>
   | URLSearchParams;
 
 /**
@@ -86,7 +86,7 @@ export function createSearchParams(
       ? init
       : Object.keys(init).reduce((memo, key) => {
           let value = init[key];
-          return memo.concat(
+          return value === undefined ? memo : memo.concat(
             Array.isArray(value) ? value.map((v) => [key, v]) : [[key, value]]
           );
         }, [] as ParamKeyValuePair[])
