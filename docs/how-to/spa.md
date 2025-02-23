@@ -62,7 +62,7 @@ export default function App() {
 }
 ```
 
-Because the root route is server-rendered at build time, you can also use a `loader` in your root route if you choose. This `loader` will be called at build time ans the data will be available via the optional `HydrateFallback` `loaderData` prop.
+Because the root route is server-rendered at build time, you can also use a `loader` in your root route if you choose. This `loader` will be called at build time and the data will be available via the optional `HydrateFallback` `loaderData` prop.
 
 ```tsx filename=root.tsx lines=[5,10,14]
 import { Route } from "./+types/root";
