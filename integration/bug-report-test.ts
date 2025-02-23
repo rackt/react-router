@@ -65,7 +65,8 @@ test.beforeAll(async () => {
     ////////////////////////////////////////////////////////////////////////////
     files: {
       "app/routes/_index.tsx": js`
-        import { useLoaderData, Link } from "react-router";
+        import { useEffect } from "react";
+        import { useLoaderData, Link, useNavigate } from "react-router";
 
         export function loader() {
           return "pizza";
@@ -73,6 +74,13 @@ test.beforeAll(async () => {
 
         export default function Index() {
           let data = useLoaderData();
+
+          const navigate = useNavigate();
+          useEffect(() => {
+            navigate("/burgers");
+            navigate("/burgers");
+          }, []);
+
           return (
             <div>
               {data}
@@ -103,7 +111,9 @@ test.afterAll(() => {
 // add a good description for what you expect React Router to do 👇🏽
 ////////////////////////////////////////////////////////////////////////////////
 
-test("[description of what you expect it to do]", async ({ page }) => {
+test("should not show 404 page on multiple navigate calls", async ({
+  page,
+}) => {
   let app = new PlaywrightFixture(appFixture, page);
   // You can test any request your app might get using `fixture`.
   let response = await fixture.requestDocument("/");
@@ -111,8 +121,10 @@ test("[description of what you expect it to do]", async ({ page }) => {
 
   // If you need to test interactivity use the `app`
   await app.goto("/");
-  await app.clickLink("/burgers");
-  await page.waitForSelector("text=cheeseburger");
+  await page.waitForURL("**/burgers");
+  // await app.poke(20);
+  await expect(page.locator("text=Not Found")).not.toBeVisible();
+  await expect(page.locator("text=cheeseburger")).toBeVisible();
 
   // If you're not sure what's going on, you can "poke" the app, it'll
   // automatically open up in your browser for 20 seconds, so be quick!
