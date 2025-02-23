@@ -245,7 +245,7 @@ describe("matchPath", () => {
   });
 });
 
-describe("matchPath optional segments", () => {
+describe("matchPath optional dynamic segments", () => {
   it("should match when optional segment is provided", () => {
     const match = matchPath("/:lang?/user/:id", "/en/user/123");
     expect(match).toMatchObject({ params: { lang: "en", id: "123" } });
@@ -289,6 +289,80 @@ describe("matchPath optional segments", () => {
   it("should match multiple optional segments and all are provided", () => {
     const match = matchPath("/:lang?/user/:id?", "/en/user/123");
     expect(match).toMatchObject({ params: { lang: "en", id: "123" } });
+  });
+});
+
+describe("matchPath optional static segments", () => {
+  it("should match when optional segment is provided", () => {
+    const match = matchPath("/school?/user/:id", "/school/user/123");
+    expect(match).toMatchObject({
+      pathname: "/school/user/123",
+      pathnameBase: "/school/user/123",
+    });
+  });
+
+  it("should match when optional segment is *not* provided", () => {
+    const match = matchPath("/school?/user/:id", "/user/123");
+    expect(match).toMatchObject({
+      pathname: "/user/123",
+      pathnameBase: "/user/123",
+    });
+  });
+
+  it("should match when middle optional segment is provided", () => {
+    const match = matchPath("/school/user?/:id", "/school/user/123");
+    expect(match).toMatchObject({
+      pathname: "/school/user/123",
+      pathnameBase: "/school/user/123",
+    });
+  });
+
+  it("should match when middle optional segment is *not* provided", () => {
+    const match = matchPath("/school/user?/:id", "/school/123");
+    expect(match).toMatchObject({
+      pathname: "/school/123",
+      pathnameBase: "/school/123",
+    });
+  });
+
+  it("should match when end optional segment is provided", () => {
+    const match = matchPath("/school/user/admin?", "/school/user/admin");
+    expect(match).toMatchObject({
+      pathname: "/school/user/admin",
+      pathnameBase: "/school/user/admin",
+    });
+  });
+
+  it("should match when end optional segment is *not* provided", () => {
+    const match = matchPath("/school/user/admin?", "/school/user");
+    expect(match).toMatchObject({
+      pathname: "/school/user",
+      pathnameBase: "/school/user",
+    });
+  });
+
+  it("should match multiple optional segments and none are provided", () => {
+    const match = matchPath("/school?/user/admin?", "/user");
+    expect(match).toMatchObject({
+      pathname: "/user",
+      pathnameBase: "/user",
+    });
+  });
+
+  it("should match multiple optional segments and one is provided", () => {
+    const match = matchPath("/school?/user/admin?", "/user/admin");
+    expect(match).toMatchObject({
+      pathname: "/user/admin",
+      pathnameBase: "/user/admin",
+    });
+  });
+
+  it("should match multiple optional segments and all are provided", () => {
+    const match = matchPath("/school?/user/admin?", "/school/user/admin");
+    expect(match).toMatchObject({
+      pathname: "/school/user/admin",
+      pathnameBase: "/school/user/admin",
+    });
   });
 });
 
