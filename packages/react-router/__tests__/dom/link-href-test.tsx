@@ -891,6 +891,23 @@ describe("<Link> href", () => {
       );
     });
 
+    describe("when using a hash router with noslash", () => {
+      it("renders proper <a href> for HashRouter", () => {
+        let renderer: TestRenderer.ReactTestRenderer;
+        TestRenderer.act(() => {
+          renderer = TestRenderer.create(
+            <HashRouter hashType="noslash">
+              <Routes>
+                <Route path="/" element={<Link to="/path?search=value#hash" />} />
+              </Routes>
+            </HashRouter>
+          );
+        });
+        expect(renderer.root.findByType("a").props.href).toEqual(
+          "#path?search=value#hash"
+        );
+      });
+
     it("renders proper <a href> for createHashRouter", () => {
       let renderer: TestRenderer.ReactTestRenderer;
       TestRenderer.act(() => {
@@ -906,7 +923,25 @@ describe("<Link> href", () => {
         "#/path?search=value#hash"
       );
     });
+
+    it("renders proper <a href> for createHashRouter with noslash", () => {
+      let renderer: TestRenderer.ReactTestRenderer;
+      TestRenderer.act(() => {
+        let router = createHashRouter([
+          {
+            path: "/",
+            element: <Link to="/path?search=value#hash">Link</Link>,
+          },
+        ],
+        {hashType: 'noslash'});
+        renderer = TestRenderer.create(<RouterProvider router={router} />);
+      });
+      expect(renderer.root.findByType("a").props.href).toEqual(
+        "#path?search=value#hash"
+      );
+    });
   });
+});
 
   test("fails gracefully on invalid `to` values", () => {
     let warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});

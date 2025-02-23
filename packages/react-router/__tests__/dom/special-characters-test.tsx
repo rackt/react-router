@@ -1110,6 +1110,93 @@ describe("special character tests", () => {
         );
       });
     });
+    describe("hash routers with noslash", () => {
+      it("encodes characters in HashRouter", () => {
+        let testWindow = getWindow("/#with space");
+
+        let ctx = render(
+          <HashRouter window={testWindow} hashType="noslash">
+            <Routes>
+              <Route path="/with space" element={<ShowPath />} />
+            </Routes>
+          </HashRouter>
+        );
+
+        expect(testWindow.location.pathname).toBe("/");
+        expect(testWindow.location.hash).toBe("#with%20space");
+        expect(ctx.container.innerHTML).toMatchInlineSnapshot(
+          `"<pre>{"pathname":"/with%20space","search":"","hash":""}</pre>"`
+        );
+      });
+
+      it("encodes characters in HashRouter (navigate)", () => {
+        let testWindow = getWindow("/");
+
+        function Start() {
+          let navigate = useNavigate();
+          // eslint-disable-next-line react-hooks/exhaustive-deps
+          React.useEffect(() => { navigate("/with space") }, []);
+          return null;
+        }
+
+        let ctx = render(
+          <HashRouter window={testWindow} hashType="noslash">
+            <Routes>
+              <Route path="/" element={<Start />} />
+              <Route path="/with space" element={<ShowPath />} />
+            </Routes>
+          </HashRouter>
+        );
+
+        expect(testWindow.location.pathname).toBe("/");
+        expect(testWindow.location.hash).toBe("#with%20space");
+        expect(ctx.container.innerHTML).toMatchInlineSnapshot(
+          `"<pre>{"pathname":"/with%20space","search":"","hash":""}</pre>"`
+        );
+      });
+
+      it("encodes characters in createHashRouter", () => {
+        let testWindow = getWindow("/#with space");
+
+        let router = createHashRouter(
+          [{ path: "/with space", element: <ShowPath /> }],
+          { window: testWindow, hashType:'noslash' }
+        );
+        let ctx = render(<RouterProvider router={router} />);
+
+        expect(testWindow.location.pathname).toBe("/");
+        expect(testWindow.location.hash).toBe("#with%20space");
+        expect(ctx.container.innerHTML).toMatchInlineSnapshot(
+          `"<pre>{"pathname":"/with%20space","search":"","hash":""}</pre>"`
+        );
+      });
+
+      it("encodes characters in createHashRouter (navigate)", () => {
+        let testWindow = getWindow("/");
+
+        function Start() {
+          let navigate = useNavigate();
+          // eslint-disable-next-line react-hooks/exhaustive-deps
+          React.useEffect(() => { navigate("/with space") }, []);
+          return null;
+        }
+
+        let router = createHashRouter(
+          [
+            { path: "/", element: <Start /> },
+            { path: "/with space", element: <ShowPath /> },
+          ],
+          { window: testWindow, hashType:'noslash' }
+        );
+        let ctx = render(<RouterProvider router={router} />);
+
+        expect(testWindow.location.pathname).toBe("/");
+        expect(testWindow.location.hash).toBe("#with%20space");
+        expect(ctx.container.innerHTML).toMatchInlineSnapshot(
+          `"<pre>{"pathname":"/with%20space","search":"","hash":""}</pre>"`
+        );
+      });
+    });
   });
 });
 
