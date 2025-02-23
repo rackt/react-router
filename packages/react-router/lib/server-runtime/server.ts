@@ -303,6 +303,15 @@ async function handleManifestRequest(
   routes: ServerRoute[],
   url: URL
 ) {
+  if (build.assets.version !== url.searchParams.get("version")) {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "X-Remix-Reload-Document": "true",
+      },
+    });
+  }
+
   let patches: Record<string, EntryRoute> = {};
 
   if (url.searchParams.has("p")) {

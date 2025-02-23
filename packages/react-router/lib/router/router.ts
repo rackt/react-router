@@ -2225,7 +2225,8 @@ export function createRouter(init: RouterInit): Router {
       let discoverResult = await discoverRoutes(
         requestMatches,
         path,
-        fetchRequest.signal
+        fetchRequest.signal,
+        key
       );
 
       if (discoverResult.type === "aborted") {
@@ -2509,7 +2510,8 @@ export function createRouter(init: RouterInit): Router {
       let discoverResult = await discoverRoutes(
         matches,
         path,
-        fetchRequest.signal
+        fetchRequest.signal,
+        key
       );
 
       if (discoverResult.type === "aborted") {
@@ -3168,7 +3170,8 @@ export function createRouter(init: RouterInit): Router {
   async function discoverRoutes(
     matches: AgnosticDataRouteMatch[],
     pathname: string,
-    signal: AbortSignal
+    signal: AbortSignal,
+    fetcherKey?: string
   ): Promise<DiscoverRoutesResult> {
     if (!patchRoutesOnNavigationImpl) {
       return { type: "success", matches };
@@ -3184,6 +3187,7 @@ export function createRouter(init: RouterInit): Router {
           signal,
           path: pathname,
           matches: partialMatches,
+          fetcherKey,
           patch: (routeId, children) => {
             if (signal.aborted) return;
             patchRoutesImpl(
