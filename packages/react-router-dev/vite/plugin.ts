@@ -3308,8 +3308,11 @@ export async function getEnvironmentOptionsResolvers(
                 }
               ),
             ],
-            output: {
-              entryFileNames({ moduleIds }) {
+            output: (ctx.reactRouterConfig.future.unstable_viteEnvironmentApi
+              ? viteUserConfig?.environments?.client?.build?.rollupOptions
+                  ?.output
+              : viteUserConfig?.build?.rollupOptions?.output) ?? {
+              entryFileNames: ({ moduleIds }) => {
                 let routeChunkModuleId = moduleIds.find(isRouteChunkModuleId);
                 let routeChunkName = routeChunkModuleId
                   ? getRouteChunkNameFromModuleId(routeChunkModuleId)
@@ -3318,7 +3321,9 @@ export async function getEnvironmentOptionsResolvers(
                   ? `-${kebabCase(routeChunkName)}`
                   : "";
                 return path.posix.join(
-                  viteUserConfig.build?.assetsDir ?? "assets",
+                  (ctx.reactRouterConfig.future.unstable_viteEnvironmentApi
+                    ? viteUserConfig?.environments?.client?.build?.assetsDir
+                    : viteUserConfig?.build?.assetsDir) ?? "assets",
                   `[name]${routeChunkSuffix}-[hash].js`
                 );
               },
