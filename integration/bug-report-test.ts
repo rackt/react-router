@@ -1,12 +1,12 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import { PlaywrightFixture } from "./helpers/playwright-fixture.js";
-import type { Fixture, AppFixture } from "./helpers/create-fixture.js";
+import type { AppFixture, Fixture } from "./helpers/create-fixture.js";
 import {
   createAppFixture,
   createFixture,
   js,
 } from "./helpers/create-fixture.js";
+import { PlaywrightFixture } from "./helpers/playwright-fixture.js";
 
 let fixture: Fixture;
 let appFixture: AppFixture;
@@ -64,27 +64,39 @@ test.beforeAll(async () => {
     // `createFixture` will make an app and run your tests against it.
     ////////////////////////////////////////////////////////////////////////////
     files: {
-      "app/routes/_index.tsx": js`
-        import { useLoaderData, Link } from "react-router";
+      "app/routes/action-redirect.tsx": js`
+        import { redirect, Form } from "react-router";
 
-        export function loader() {
-          return "pizza";
+        export function action({ request }) {
+          const headers = new Headers(request.headers);
+          return redirect("https://remix.run/", { headers });
         }
 
         export default function Index() {
-          let data = useLoaderData();
           return (
-            <div>
-              {data}
-              <Link to="/burgers">Other Route</Link>
-            </div>
+            <Form method="post">
+              <button type="submit">
+                Redirect
+              </button>
+            </Form>
           )
         }
       `,
+      "app/routes/action-redirect-working.tsx": js`
+        import { redirect, Form } from "react-router";
 
-      "app/routes/burgers.tsx": js`
+        export function action() {
+          return redirect("https://remix.run/");
+        }
+
         export default function Index() {
-          return <div>cheeseburger</div>;
+          return (
+            <Form method="post">
+              <button type="submit">
+                Redirect
+              </button>
+            </Form>
+          )
         }
       `,
     },
@@ -103,22 +115,22 @@ test.afterAll(() => {
 // add a good description for what you expect React Router to do 👇🏽
 ////////////////////////////////////////////////////////////////////////////////
 
-test("[description of what you expect it to do]", async ({ page }) => {
+test("redirects to external url while preserving original request headers", async ({
+  page,
+}) => {
   let app = new PlaywrightFixture(appFixture, page);
-  // You can test any request your app might get using `fixture`.
-  let response = await fixture.requestDocument("/");
-  expect(await response.text()).toMatch("pizza");
 
-  // If you need to test interactivity use the `app`
-  await app.goto("/");
-  await app.clickLink("/burgers");
-  await page.waitForSelector("text=cheeseburger");
+  await app.waitForNetworkAfter(() => app.goto("/action-redirect"));
+  await app.clickElement("button");
+  expect(app.page.url()).toBe("https://remix.run/");
+});
 
-  // If you're not sure what's going on, you can "poke" the app, it'll
-  // automatically open up in your browser for 20 seconds, so be quick!
-  // await app.poke(20);
+test("redirects to external url", async ({ page }) => {
+  let app = new PlaywrightFixture(appFixture, page);
 
-  // Go check out the other tests to see what else you can do.
+  await app.waitForNetworkAfter(() => app.goto("/action-redirect-working"));
+  await app.clickElement("button");
+  expect(app.page.url()).toBe("https://remix.run/");
 });
 
 ////////////////////////////////////////////////////////////////////////////////
