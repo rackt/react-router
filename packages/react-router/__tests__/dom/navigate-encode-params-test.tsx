@@ -93,4 +93,44 @@ describe("navigate with params", () => {
       expect(node.innerHTML).toMatch(/react\+router/);
     });
   });
+
+  describe("when navigate params are encoded using #", () => {
+    it("the encoding of the # parameter in the URL has been changed", () => {
+      function Start() {
+        let navigate = useNavigate();
+
+        React.useEffect(() => {
+          navigate("/route/react%23router/subroute/router/blog");
+        });
+
+        return null;
+      }
+
+      function Blog() {
+        let params = useParams();
+        return <h1>Blog: {params.routeName}-{params.subrouteName}</h1>;
+      }
+
+      act(() => {
+        ReactDOM.createRoot(node).render(
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Start />} />
+              <Route path="/route/:routeName/subroute/:subrouteName/*" element={
+                <Routes>
+                  <Route path="blog" element={<Blog />} />
+                  <Route path="*" element={null} />
+                </Routes>
+              } />
+            </Routes>
+          </BrowserRouter>
+        );
+      });
+
+      let pathname = window.location.pathname;
+      expect(pathname).toEqual("/route/react%23router/subroute/router/blog");
+
+      expect(node.innerHTML).toMatch(/react#router-router/);
+    });
+  });
 });
