@@ -59,7 +59,7 @@ Routes can take most of their definition lazily with the `lazy` property.
 createBrowserRouter([
   {
     path: "/show/:showId",
-    lazy: () => {
+    lazy: async () => {
       let [loader, action, Component] = await Promise.all([
         import("./show.action.js"),
         import("./show.loader.js"),
