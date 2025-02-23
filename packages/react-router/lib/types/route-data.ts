@@ -25,7 +25,9 @@ type Serialize<T> =
 
   // Map & Set
   T extends Map<infer K, infer V> ? Map<Serialize<K>, Serialize<V>> :
+  T extends ReadonlyMap<infer K, infer V> ? ReadonlyMap<Serialize<K>, Serialize<V>> :
   T extends Set<infer U> ? Set<Serialize<U>> :
+  T extends ReadonlySet<infer U> ? ReadonlySet<Serialize<U>> :
 
   // Array
   T extends [] ? [] :
@@ -108,6 +110,25 @@ type __tests = [
     >
   >,
   Expect<Equal<ServerDataFrom<() => { a: string } | Response>, { a: string }>>,
+  Expect<
+    Equal<
+      ServerDataFrom<
+        () => {
+          map: Map<string, number>;
+          readonlyMap: ReadonlyMap<string, number>;
+        }
+      >,
+      { map: Map<string, number>; readonlyMap: ReadonlyMap<string, number> }
+    >
+  >,
+  Expect<
+    Equal<
+      ServerDataFrom<
+        () => { set: Set<string>; readonlySet: ReadonlySet<string> }
+      >,
+      { set: Set<string>; readonlySet: ReadonlySet<string> }
+    >
+  >,
 
   // ClientDataFrom
   Expect<Equal<ClientDataFrom<any>, undefined>>,
