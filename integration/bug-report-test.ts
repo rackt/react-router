@@ -64,27 +64,20 @@ test.beforeAll(async () => {
     // `createFixture` will make an app and run your tests against it.
     ////////////////////////////////////////////////////////////////////////////
     files: {
-      "app/routes/_index.tsx": js`
-        import { useLoaderData, Link } from "react-router";
-
+      "app/routes/map.tsx": js`
         export function loader() {
-          return "pizza";
+          return new Map([[1, 1], [2, 2], [3, 3]]);
         }
-
-        export default function Index() {
-          let data = useLoaderData();
-          return (
-            <div>
-              {data}
-              <Link to="/burgers">Other Route</Link>
-            </div>
-          )
+        export default function Map({ loaderData }) {
+          return <div>{JSON.stringify(Array.from(loaderData.entries()))}</div>;
         }
       `,
-
-      "app/routes/burgers.tsx": js`
-        export default function Index() {
-          return <div>cheeseburger</div>;
+      "app/routes/set.tsx": js`
+        export function loader() {
+          return new Set([1, 2, 3]);
+        }
+        export default function Set({ loaderData }) {
+          return <div>{JSON.stringify(Array.from(loaderData.values()))}</div>;
         }
       `,
     },
@@ -103,22 +96,38 @@ test.afterAll(() => {
 // add a good description for what you expect React Router to do 👇🏽
 ////////////////////////////////////////////////////////////////////////////////
 
-test("[description of what you expect it to do]", async ({ page }) => {
+test("Maintains correct order of Map objects when hydrating", async ({
+  page,
+}) => {
   let app = new PlaywrightFixture(appFixture, page);
   // You can test any request your app might get using `fixture`.
-  let response = await fixture.requestDocument("/");
-  expect(await response.text()).toMatch("pizza");
+  let response = await fixture.requestDocument("/map");
+  expect(await response.text()).toMatch("<div>[[1,1],[2,2],[3,3]]</div>");
 
   // If you need to test interactivity use the `app`
-  await app.goto("/");
-  await app.clickLink("/burgers");
-  await page.waitForSelector("text=cheeseburger");
+  await app.goto("/map", true);
+
+  let html = await app.getHtml();
+  expect(html).toMatch("<div>[[1,1],[2,2],[3,3]]</div>");
 
   // If you're not sure what's going on, you can "poke" the app, it'll
   // automatically open up in your browser for 20 seconds, so be quick!
   // await app.poke(20);
 
   // Go check out the other tests to see what else you can do.
+});
+
+test("Maintains correct order of Set objects when hydrating", async ({
+  page,
+}) => {
+  let app = new PlaywrightFixture(appFixture, page);
+  let response = await fixture.requestDocument("/set");
+  expect(await response.text()).toMatch("<div>[1,2,3]</div>");
+
+  await app.goto("/set", true);
+
+  let html = await app.getHtml();
+  expect(html).toMatch("<div>[1,2,3]</div>");
 });
 
 ////////////////////////////////////////////////////////////////////////////////
