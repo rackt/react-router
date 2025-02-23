@@ -1091,7 +1091,7 @@ export function createRouter(init: RouterInit): Router {
     // in the normal navigation flow.  For SSR it's expected that lazy modules are
     // resolved prior to router creation since we can't go into a fallback
     // UI for SSR'd apps
-    if (!state.initialized) {
+    if (!state.initialized && state.errors === null) {
       startNavigation(NavigationType.Pop, state.location, {
         initialHydration: true,
       });
