@@ -1,0 +1,8 @@
+name = "react-router-app"
+compatibility_date = "2024-11-18"
+main = "./workers/app.ts"
+
+assets = {}
+
+[vars]
+VALUE_FROM_CLOUDFLARE = "Hello from Cloudflare"

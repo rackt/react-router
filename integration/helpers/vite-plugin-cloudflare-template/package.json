@@ -1,32 +1,37 @@
 {
-  "name": "@playground/split-route-modules",
+  "name": "integration-vite-plugin-cloudflare-template",
   "version": "0.0.0",
   "private": true,
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "build": "react-router build",
     "dev": "react-router dev",
-    "start": "react-router-serve ./build/server/index.js",
+    "build": "react-router build",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
-    "@react-router/node": "workspace:*",
-    "@react-router/serve": "workspace:*",
+    "express": "^4.19.2",
     "isbot": "^5.1.11",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router": "workspace:*"
+    "react-router": "workspace:*",
+    "serialize-javascript": "^6.0.1"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^0.1.1",
+    "@cloudflare/workers-types": "^4.20250214.0",
     "@react-router/dev": "workspace:*",
+    "@react-router/fs-routes": "workspace:*",
+    "@types/node": "^20.0.0",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
+    "eslint": "^8.38.0",
     "typescript": "^5.1.6",
     "vite": "^6.1.0",
-    "vite-tsconfig-paths": "^4.2.1"
+    "vite-tsconfig-paths": "^4.2.1",
+    "wrangler": "^3.109.2"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

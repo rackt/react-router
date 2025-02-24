@@ -3253,7 +3253,17 @@ export async function getEnvironmentOptionsResolvers(
 
     return mergeEnvironmentOptions(getBaseOptions({ viteUserConfig }), {
       resolve: {
-        external: ssrExternals,
+        external:
+          // This check is required to honor the "noExternal: true" config
+          // provided by vite-plugin-cloudflare within this repo. When compiling
+          // for Cloudflare, all server dependencies are externalized, but our
+          // `ssrExternals` config inadvertently overrides this. This doesn't
+          // impact consumers because for them `ssrExternals` is undefined and
+          // Cloudflare's "noExternal: true" config remains intact.
+          ctx.reactRouterConfig.future.unstable_viteEnvironmentApi &&
+          viteUserConfig.environments?.ssr?.resolve?.noExternal === true
+            ? undefined
+            : ssrExternals,
         conditions,
         externalConditions: conditions,
       },

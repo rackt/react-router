@@ -45,7 +45,7 @@
     }
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20230518.0",
+    "@cloudflare/workers-types": "^4.20250214.0",
     "react-router": "workspace:*",
     "tsup": "^8.3.0",
     "typescript": "^5.1.6",

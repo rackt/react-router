@@ -136,13 +136,13 @@ function getFiles({
   });
 }
 
-test.describe("Cloudflare", () => {
+test.describe("Cloudflare Dev Proxy", () => {
   [false, true].forEach((viteEnvironmentApi) => {
     test.describe(`viteEnvironmentApi enabled: ${viteEnvironmentApi}`, () => {
       const files = getFiles({ viteEnvironmentApi });
 
       test("vite dev", async ({ page, dev }) => {
-        let { port } = await dev(files, "vite-cloudflare-template");
+        let { port } = await dev(files, "cloudflare-dev-proxy-template");
         await workflow({ page, port });
       });
 

@@ -111,7 +111,7 @@
     "undici": "^6.10.1",
     "unified": "^10.1.2",
     "unist-util-remove": "^3.1.0",
-    "vite": "^6.0.0",
+    "vite": "^6.1.0",
     "vite-env-only": "^3.0.1",
     "vite-tsconfig-paths": "^4.2.2"
   },
@@ -124,7 +124,7 @@
       "@changesets/assemble-release-plan": "patches/@changesets__assemble-release-plan.patch"
     },
     "overrides": {
-      "workerd": "1.20240614.0"
+      "workerd": "1.20241230.0"
     }
   }
 }

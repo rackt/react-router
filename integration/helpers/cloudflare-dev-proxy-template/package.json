@@ -1,5 +1,5 @@
 {
-  "name": "integration-vite-cloudflare-template",
+  "name": "integration-cloudflare-dev-proxy-template",
   "version": "0.0.0",
   "private": true,
   "sideEffects": false,
@@ -13,21 +13,21 @@
   "dependencies": {
     "@react-router/cloudflare": "workspace:*",
     "isbot": "^4.1.0",
-    "miniflare": "^3.20231030.4",
+    "miniflare": "^3.20250214.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router": "workspace:*"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20230518.0",
+    "@cloudflare/workers-types": "^4.20250214.0",
     "@react-router/dev": "workspace:*",
     "@react-router/fs-routes": "workspace:*",
     "@react-router/remix-routes-option-adapter": "workspace:*",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "typescript": "^5.1.6",
-    "vite": "^6.0.0",
-    "wrangler": "^3.28.2"
+    "vite": "^6.1.0",
+    "wrangler": "^3.109.2"
   },
   "engines": {
     "node": ">=20.0.0"
