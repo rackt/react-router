@@ -58,6 +58,11 @@ describe("generatePath", () => {
         "/courses/baz"
       );
     });
+    it("handles slashes in dynamic params", () => {
+      expect(generatePath("/courses/:id", { id: "foo/bar" })).toBe(
+        "/courses/foo%2Fbar"
+      );
+    });
   });
 
   describe("with extraneous params", () => {

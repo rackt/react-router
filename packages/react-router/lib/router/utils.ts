@@ -962,6 +962,9 @@ export function generatePath<Path extends string>(
         const [, key, optional] = keyMatch;
         let param = params[key as PathParam<Path>];
         invariant(optional === "?" || param != null, `Missing ":${key}" param`);
+        if (typeof param === "string") {
+          param = param.replace(/\//g, "%2F");
+        }
         return stringify(param);
       }
 
