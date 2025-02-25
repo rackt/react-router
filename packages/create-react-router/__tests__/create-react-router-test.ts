@@ -689,6 +689,39 @@ describe("create-react-router CLI", () => {
     process.env.npm_config_user_agent = originalUserAgent;
   });
 
+  it("recognizes when Deno was used to run the command", async () => {
+    let originalUserAgent = process.env.npm_config_user_agent;
+    process.env.npm_config_user_agent =
+      "deno/2.0.6 npm/? deno/2.0.6 linux x86_64";
+
+    let projectDir = getProjectDir("deno-create-from-user-agent");
+
+    let execa = require("execa");
+    execa.mockImplementation(async () => {});
+
+    // Suppress terminal output
+    let stdoutMock = jest
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+
+    await createReactRouter([
+      projectDir,
+      "--template",
+      path.join(__dirname, "fixtures", "blank"),
+      "--no-git-init",
+      "--yes",
+    ]);
+
+    stdoutMock.mockReset();
+
+    expect(execa).toHaveBeenCalledWith(
+      "deno",
+      expect.arrayContaining(["install"]),
+      expect.anything()
+    );
+    process.env.npm_config_user_agent = originalUserAgent;
+  });
+
   it("supports specifying the package manager, regardless of user agent", async () => {
     let originalUserAgent = process.env.npm_config_user_agent;
     process.env.npm_config_user_agent =

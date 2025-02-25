@@ -151,7 +151,7 @@ async function getContext(argv: string[]): Promise<Context> {
     noMotion,
     pkgManager: validatePackageManager(
       pkgManager ??
-        // npm, pnpm, Yarn, and Bun set the user agent environment variable that can be used
+        // npm, pnpm, Yarn, Bun and Deno (v2.0.5+) set the user agent environment variable that can be used
         // to determine which package manager ran the command.
         (process.env.npm_config_user_agent ?? "npm").split("/")[0]
     ),
@@ -513,19 +513,11 @@ async function doneStep(ctx: Context) {
   await sleep(200);
 }
 
-type PackageManager = "npm" | "yarn" | "pnpm" | "bun";
-
-const packageManagerExecScript: Record<PackageManager, string> = {
-  npm: "npx",
-  yarn: "yarn",
-  pnpm: "pnpm exec",
-  bun: "bunx",
-};
+const validPackageManagers = ["npm", "yarn", "pnpm", "bun", "deno"] as const;
+type PackageManager = (typeof validPackageManagers)[number];
 
 function validatePackageManager(pkgManager: string): PackageManager {
-  return packageManagerExecScript.hasOwnProperty(pkgManager)
-    ? (pkgManager as PackageManager)
-    : "npm";
+  return validPackageManagers.find((name) => pkgManager === name) ?? "npm";
 }
 
 async function installDependencies({
