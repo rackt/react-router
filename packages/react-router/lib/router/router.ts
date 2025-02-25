@@ -2187,7 +2187,12 @@ export function createRouter(init: RouterInit): Router {
     preventScrollReset: boolean,
     submission: Submission
   ) {
-    interruptActiveLoads();
+    // Check if a loader needs revalidation before cancelling it
+    interruptActiveLoadsWithRevalidation(init.history, state);
+
+    // And cancel this one just in case
+    if (fetchControllers.has(key)) cancelledFetcherLoads.add(key);
+    abortFetcher(key);
     fetchLoadMatches.delete(key);
 
     function detectAndHandle405Error(m: AgnosticDataRouteMatch) {
@@ -2848,6 +2853,51 @@ export function createRouter(init: RouterInit): Router {
 
     // Abort in-flight fetcher loads
     fetchLoadMatches.forEach((_, key) => {
+      if (fetchControllers.has(key)) {
+        cancelledFetcherLoads.add(key);
+      }
+      abortFetcher(key);
+    });
+  }
+
+  function interruptActiveLoadsWithRevalidation(
+    history: History,
+    state: RouterState
+  ) {
+    // Every interruption triggers a revalidation for the others
+    isRevalidationRequired = true;
+
+    // Abort in-flight fetcher loads
+    fetchLoadMatches.forEach((match, key) => {
+      const routesToUse = inFlightDataRoutes || dataRoutes;
+      const fetcherMatches = matchRoutes(routesToUse, match.path, basename);
+
+      if (fetcherMatches) {
+        const fetcherMatch = getTargetMatch(fetcherMatches, match.path);
+
+        let currentUrl = history.createURL(state.location);
+        let nextUrl = history.createURL(location);
+        let matches =
+          state.navigation.state !== "idle"
+            ? matchRoutes(routesToUse, state.navigation.location, basename)
+            : state.matches;
+
+        // Before cancelling the fetcher, ask its revalidator
+        if (
+          matches &&
+          !shouldRevalidateLoader(fetcherMatch, {
+            currentUrl,
+            currentParams: state.matches[state.matches.length - 1].params,
+            nextUrl,
+            nextParams: matches[matches.length - 1].params,
+            defaultShouldRevalidate: isRevalidationRequired,
+          })
+        ) {
+          // If loader does not need revalidation we let it async
+          return;
+        }
+      }
+
       if (fetchControllers.has(key)) {
         cancelledFetcherLoads.add(key);
       }
@@ -4349,6 +4399,18 @@ function getMatchesToLoad(
       // revalidation, it would just be a brand new load if an explicit
       // revalidation is required
       shouldRevalidate = isRevalidationRequired;
+
+      // If we first see for cancelled fetchers, and then for pending ones,
+      // it seems that no fetcher would ever got in here because methods like
+      // handleFetcherAction first aborts every fetcher there is, so every of
+      // them would fall in the previous `if` block (except for the ones called
+      // after the action initial call).
+      if (fetcher.state === "loading") {
+        // Naturally, if a loader is still in process, we want it to finish because
+        // it most likely got caught by `interruptActiveLoadsWithRevalidation` and
+        // so it already told us to not revalidate it.
+        return;
+      }
     } else {
       // Otherwise fall back on any user-defined shouldRevalidate, defaulting
       // to explicit revalidations only
