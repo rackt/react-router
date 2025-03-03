@@ -1798,6 +1798,7 @@ export type FetcherWithComponents<TData> = Fetcher<TData> & {
  */
 export function useFetcher<T = any>({
   key,
+  action
 }: {
   /**
     By default, `useFetcher` generate a unique fetcher scoped to that component. If you want to identify a fetcher with your own key such that you can access it from elsewhere in your app, you can do that with the `key` option:
@@ -1817,6 +1818,17 @@ export function useFetcher<T = any>({
     ```
    */
   key?: string;
+  /**
+   * The action to use for the fetcher submissions. If not provided, the action will be derived from the route.
+   * ```tsx
+   * function MyForm() {
+   *   let fetcher = useFetcher({ action: "/login" });
+   *   // ...
+   * }
+   * ```
+   * The example above will submit to `/login` when the form is submitted either via `fetcher.submit` or `fetcher.Form`. or fetch from `/login/ when load is called
+   */
+  action?: string;
 } = {}): FetcherWithComponents<SerializeFrom<T>> {
   let { router } = useDataRouterContext(DataRouterHook.UseFetcher);
   let state = useDataRouterState(DataRouterStateHook.UseFetcher);
@@ -1848,34 +1860,34 @@ export function useFetcher<T = any>({
   let load = React.useCallback(
     async (href: string, opts?: { flushSync?: boolean }) => {
       invariant(routeId, "No routeId available for fetcher.load()");
-      await router.fetch(fetcherKey, routeId, href, opts);
+      await router.fetch(fetcherKey, routeId, action ? action : href, opts);
     },
-    [fetcherKey, routeId, router]
+    [fetcherKey, routeId, router, action]
   );
 
   let submitImpl = useSubmit();
   let submit = React.useCallback<FetcherSubmitFunction>(
     async (target, opts) => {
-      await submitImpl(target, {
+      await submitImpl(action ? action : target, {
         ...opts,
         navigate: false,
         fetcherKey,
       });
     },
-    [fetcherKey, submitImpl]
+    [fetcherKey, submitImpl, action]
   );
 
   let FetcherForm = React.useMemo(() => {
     let FetcherForm = React.forwardRef<HTMLFormElement, FetcherFormProps>(
       (props, ref) => {
         return (
-          <Form {...props} navigate={false} fetcherKey={fetcherKey} ref={ref} />
+          <Form action={action} {...props} navigate={false} fetcherKey={fetcherKey} ref={ref} />
         );
       }
     );
     FetcherForm.displayName = "fetcher.Form";
     return FetcherForm;
-  }, [fetcherKey]);
+  }, [fetcherKey, action]);
 
   // Exposed FetcherWithComponents
   let fetcher = state.fetchers.get(fetcherKey) || IDLE_FETCHER;
