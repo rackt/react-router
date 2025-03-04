@@ -1965,8 +1965,13 @@ export function createRouter(init: RouterInit): Router {
 
     pendingNavigationLoadId = ++incrementingLoadId;
 
-    // Short circuit if we have no loaders to run
-    if (matchesToLoad.length === 0 && revalidatingFetchers.length === 0) {
+    // Short circuit if we have no loaders to run, unless there's a custom dataStrategy
+    // since they may have different revalidation rules (i.e., single fetch)
+    if (
+      !init.dataStrategy &&
+      matchesToLoad.length === 0 &&
+      revalidatingFetchers.length === 0
+    ) {
       let updatedFetchers = markFetchRedirectsDone();
       completeNavigation(
         location,
@@ -4081,7 +4086,7 @@ export function createStaticHandler(
     );
 
     // Short circuit if we have no loaders to run (query())
-    if (matchesToLoad.length === 0) {
+    if (!dataStrategy && matchesToLoad.length === 0) {
       return {
         matches,
         // Add a null for all matched routes for proper revalidation on the client
