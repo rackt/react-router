@@ -695,6 +695,7 @@ function getUrlBasedHistory(
     // pre-encode them since they might be part of a matching splat param from
     // an ancestor route
     href = href.replace(/ $/, "%20");
+    href = typeof to === "string" ? href.replace(/#/, "%23") : href
     invariant(
       base,
       `No window.location.(origin|href) available to create URL for href: ${href}`
