@@ -1,3 +1,4 @@
+import type { PropsWithChildren } from "react";
 import type { Equal, Expect } from "../types/utils";
 import type { Location, Path, To } from "./history";
 import { invariant, parsePath, warning } from "./history";
@@ -326,6 +327,8 @@ export interface ShouldRevalidateFunctionArgs {
 export interface ShouldRevalidateFunction {
   (args: ShouldRevalidateFunctionArgs): boolean;
 }
+
+export type LayoutComponentProps = PropsWithChildren;
 
 export interface DataStrategyMatch
   extends AgnosticRouteMatch<string, AgnosticDataRouteObject> {

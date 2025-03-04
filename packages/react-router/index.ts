@@ -46,6 +46,7 @@ export type {
   unstable_RouterContext,
   ShouldRevalidateFunction,
   ShouldRevalidateFunctionArgs,
+  LayoutComponentProps,
   UIMatch,
 } from "./lib/router/utils";
 export {
