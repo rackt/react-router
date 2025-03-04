@@ -7,6 +7,7 @@ import type {
   Action as NavigationType,
   Location,
   To,
+  HashType,
 } from "../router/history";
 import {
   createBrowserHistory,
@@ -199,13 +200,13 @@ export function createBrowserRouter(
  */
 export function createHashRouter(
   routes: RouteObject[],
-  opts?: DOMRouterOpts
+  opts?: DOMRouterOpts & { hashType?: HashType; }
 ): DataRouter {
   return createRouter({
     basename: opts?.basename,
     unstable_getContext: opts?.unstable_getContext,
     future: opts?.future,
-    history: createHashHistory({ window: opts?.window }),
+    history: createHashHistory({ window: opts?.window, hashType: opts?.hashType }),
     hydrationData: opts?.hydrationData || parseHydrationData(),
     routes,
     mapRouteProperties,
@@ -336,6 +337,7 @@ export interface HashRouterProps {
   basename?: string;
   children?: React.ReactNode;
   window?: Window;
+  hashType?: HashType;
 }
 
 /**
@@ -344,10 +346,15 @@ export interface HashRouterProps {
  *
  * @category Component Routers
  */
-export function HashRouter({ basename, children, window }: HashRouterProps) {
+export function HashRouter({
+  basename,
+  children,
+  window,
+  hashType = 'slash'
+}: HashRouterProps) {
   let historyRef = React.useRef<HashHistory>();
   if (historyRef.current == null) {
-    historyRef.current = createHashHistory({ window, v5Compat: true });
+    historyRef.current = createHashHistory({ window, v5Compat: true, hashType: hashType });
   }
 
   let history = historyRef.current;

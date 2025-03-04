@@ -43,14 +43,19 @@ import {
 
 import getHtml from "../utils/getHtml";
 import { createDeferred, tick } from "../router/utils/utils";
-
-testDomRouter("<DataBrowserRouter>", createBrowserRouter, (url) =>
-  getWindowImpl(url, false)
-);
+function createNoSlashRouter(routes, opts?) {
+  return opts === undefined ? createHashRouter(routes, { hashType: 'noslash' }) : createHashRouter(routes, { ...opts, hashType: 'noslash' })
+}
 
 testDomRouter("<DataHashRouter>", createHashRouter, (url) =>
   getWindowImpl(url, true)
 );
+testDomRouter("<DataBrowserRouter>", createBrowserRouter, (url) =>
+  getWindowImpl(url, false)
+);
+
+testDomRouter("<DataHashRouterNoSlash>", createNoSlashRouter, (url) =>
+  getWindowImpl(url.substring(1), true))
 
 function testDomRouter(
   name: string,
@@ -65,6 +70,9 @@ function testDomRouter(
   ) {
     if (name === "<DataHashRouter>") {
       expect(testWindow.location.hash).toEqual("#" + pathname + (search || ""));
+    }
+    else if (name === "<DataHashRouterNoSlash>") {
+      expect(testWindow.location.hash).toEqual("#" + pathname.slice(1).concat() + (search || ""));
     } else {
       expect(testWindow.location.pathname).toEqual(pathname);
       if (search) {
@@ -78,8 +86,8 @@ function testDomRouter(
     let consoleError: jest.SpyInstance;
 
     beforeEach(() => {
-      consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {});
-      consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+      consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => { });
+      consoleError = jest.spyOn(console, "error").mockImplementation(() => { });
     });
 
     afterEach(() => {
@@ -93,7 +101,6 @@ function testDomRouter(
         createRoutesFromElements(<Route path="/" element={<h1>Home</h1>} />)
       );
       let { container } = render(<RouterProvider router={router} />);
-
       expect(getHtml(container)).toMatchInlineSnapshot(`
          "<div>
            <h1>
@@ -5022,6 +5029,9 @@ function testDomRouter(
 
         // Resolve Comp2 loader and complete navigation
         navDfd.resolve("nav data");
+        // On slower machines test could find updated `/2.*idle/` but `["idle"]` hasn't updated yet. This is purely performance issue.
+        // Sometimes closing all apps and letting test run caused test to pass after many failures
+        await waitFor(() => screen.getByText(/\[\]/), { timeout: 500 });
         await waitFor(() => screen.getByText(/2.*idle/));
         expect(getHtml(container.querySelector("#output")!))
           .toMatchInlineSnapshot(`
@@ -5765,7 +5775,7 @@ function testDomRouter(
           await waitFor(() =>
             // React `useId()` results in something such as `:r2a:`, `:r2i:`,
             // `:rt:`, or `:rp:` depending on `DataBrowserRouter`/`DataHashRouter`
-            expect(container.innerHTML).toMatch(/(:r[0-9]?[a-z]:),my-key/)
+            expect(container.innerHTML).toMatch(/(:r[0-9]?[a-z0-9]:),my-key/)
           );
         });
 
@@ -7713,7 +7723,7 @@ function testDomRouter(
             ready: Promise.resolve(),
             finished: Promise.resolve(),
             updateCallbackDone: Promise.resolve(),
-            skipTransition: () => {},
+            skipTransition: () => { },
           };
         });
         testWindow.document.startViewTransition = spy;

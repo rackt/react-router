@@ -5,6 +5,7 @@ import type {
   Location,
   MemoryHistory,
   To,
+  HashType,
 } from "./router/history";
 import {
   Action as NavigationType,
@@ -731,6 +732,7 @@ export interface RouterProps {
   navigationType?: NavigationType;
   navigator: Navigator;
   static?: boolean;
+  hashType?: HashType;
 }
 
 /**

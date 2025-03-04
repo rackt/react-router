@@ -23,6 +23,10 @@ testDomRouter("<DataHashRouter>", createHashRouter, (url) =>
   getWindowImpl(url, true)
 );
 
+testDomRouter("<DataHashRouterNoSlash>", (routes, opts) => createHashRouter(routes, { ...opts, hashType: 'noslash' }), (url) =>
+  getWindowImpl(url, true)
+);
+
 function testDomRouter(
   name: string,
   createTestRouter: typeof createBrowserRouter | typeof createHashRouter,
@@ -33,8 +37,8 @@ function testDomRouter(
     let consoleError: jest.SpyInstance;
 
     beforeEach(() => {
-      consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {});
-      consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+      consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => { });
+      consoleError = jest.spyOn(console, "error").mockImplementation(() => { });
     });
 
     afterEach(() => {
