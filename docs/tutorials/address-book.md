@@ -987,15 +987,13 @@ touch app/routes/edit-contact.tsx
 
 Don't forget to add the route to `app/routes.ts`:
 
-```tsx filename=app/routes.ts lines=[5-8]
+<!-- prettier-ignore -->
+```tsx filename=app/routes.ts lines=[5]
 export default [
   layout("layouts/sidebar.tsx", [
     index("routes/home.tsx"),
     route("contacts/:contactId", "routes/contact.tsx"),
-    route(
-      "contacts/:contactId/edit",
-      "routes/edit-contact.tsx"
-    ),
+    route("contacts/:contactId/edit", "routes/edit-contact.tsx"),
   ]),
   route("about", "routes/about.tsx"),
 ] satisfies RouteConfig;
@@ -1336,14 +1334,12 @@ At this point you should know everything you need to know to make the delete but
 touch app/routes/destroy-contact.tsx
 ```
 
-```tsx filename=app/routes.ts lines=[3-6]
+<!-- prettier-ignore -->
+```tsx filename=app/routes.ts lines=[3]
 export default [
-  // existing routes
-  route(
-    "contacts/:contactId/destroy",
-    "routes/destroy-contact.tsx"
-  ),
-  // existing routes
+    // existing routes
+    route("contacts/:contactId/destroy", "routes/destroy-contact.tsx"),
+    // existing routes
 ] satisfies RouteConfig;
 ```
 
