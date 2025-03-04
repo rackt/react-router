@@ -100,10 +100,10 @@ export function createRoutesStub(
     future,
   }: RoutesTestStubProps) {
     let routerRef = React.useRef<ReturnType<typeof createMemoryRouter>>();
-    let remixContextRef = React.useRef<FrameworkContextObject>();
+    let frameworkContextRef = React.useRef<FrameworkContextObject>();
 
     if (routerRef.current == null) {
-      remixContextRef.current = {
+      frameworkContextRef.current = {
         future: {},
         manifest: {
           routes: {},
@@ -122,8 +122,8 @@ export function createRoutesStub(
         // @ts-expect-error loader/action context types don't match :/
         convertRoutesToDataRoutes(routes, (r) => r),
         context,
-        remixContextRef.current.manifest,
-        remixContextRef.current.routeModules
+        frameworkContextRef.current.manifest,
+        frameworkContextRef.current.routeModules
       );
       routerRef.current = createMemoryRouter(patched, {
         initialEntries,
@@ -133,7 +133,7 @@ export function createRoutesStub(
     }
 
     return (
-      <FrameworkContext.Provider value={remixContextRef.current}>
+      <FrameworkContext.Provider value={frameworkContextRef.current}>
         <RouterProvider router={routerRef.current} />
       </FrameworkContext.Provider>
     );
@@ -150,11 +150,11 @@ function processRoutes(
   return routes.map((route) => {
     if (!route.id) {
       throw new Error(
-        "Expected a route.id in @remix-run/testing processRoutes() function"
+        "Expected a route.id in react-router processRoutes() function"
       );
     }
 
-    // Patch in the Remix context to loaders/actions
+    // Patch in the react-router context to loaders/actions
     let { loader, action } = route;
     let newRoute: DataRouteObject = {
       id: route.id,
