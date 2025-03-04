@@ -934,6 +934,7 @@ export function detectRouteChunks(
 export const routeChunkExportNames = [
   "clientAction",
   "clientLoader",
+  "unstable_clientMiddleware",
   "HydrateFallback",
 ] as const;
 export type RouteChunkExportName = (typeof routeChunkExportNames)[number];
@@ -963,6 +964,7 @@ const routeChunkQueryStrings: Record<RouteChunkName, RouteChunkQueryString> = {
   main: `${routeChunkQueryStringPrefix}main`,
   clientAction: `${routeChunkQueryStringPrefix}clientAction`,
   clientLoader: `${routeChunkQueryStringPrefix}clientLoader`,
+  unstable_clientMiddleware: `${routeChunkQueryStringPrefix}unstable_clientMiddleware`,
   HydrateFallback: `${routeChunkQueryStringPrefix}HydrateFallback`,
 };
 

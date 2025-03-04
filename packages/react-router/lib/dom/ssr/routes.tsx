@@ -33,12 +33,14 @@ export interface EntryRoute extends Route {
   hasLoader: boolean;
   hasClientAction: boolean;
   hasClientLoader: boolean;
+  hasClientMiddleware: boolean;
   hasErrorBoundary: boolean;
   imports?: string[];
   css?: string[];
   module: string;
   clientActionModule: string | undefined;
   clientLoaderModule: string | undefined;
+  clientMiddlewareModule: string | undefined;
   hydrateFallbackModule: string | undefined;
   parentId?: string;
 }
