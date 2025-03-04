@@ -771,7 +771,7 @@ export const reactRouterVitePlugin: ReactRouterVitePlugin = () => {
         ctx.reactRouterConfig.future.unstable_viteEnvironmentApi &&
         viteCommand === "serve"
           ? `
-              export const getCriticalCss = ({ pathname }) => {
+              export const unstable_getCriticalCss = ({ pathname }) => {
                 return {
                   rel: "stylesheet",
                   href: "${

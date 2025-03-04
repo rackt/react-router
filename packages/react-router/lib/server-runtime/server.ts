@@ -269,8 +269,8 @@ export const createRequestHandler: CreateRequestHandlerFunction = (
       let { pathname } = url;
 
       let criticalCss: CriticalCss | undefined = undefined;
-      if (_build.getCriticalCss) {
-        criticalCss = await _build.getCriticalCss({ pathname });
+      if (_build.unstable_getCriticalCss) {
+        criticalCss = await _build.unstable_getCriticalCss({ pathname });
       } else if (
         mode === ServerMode.Development &&
         getDevServerHooks()?.getCriticalCss

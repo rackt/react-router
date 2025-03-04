@@ -29,7 +29,7 @@ export interface ServerBuild {
   assetsBuildDirectory: string;
   future: FutureConfig;
   ssr: boolean;
-  getCriticalCss?: (args: {
+  unstable_getCriticalCss?: (args: {
     pathname: string;
   }) => OptionalCriticalCss | Promise<OptionalCriticalCss>;
   /**
