@@ -1,4 +1,5 @@
 import type { MetaDescriptor } from "../dom/ssr/routeModules";
+import type { Location } from "../router/history";
 import type { LinkDescriptor } from "../router/links";
 import type {
   unstable_MiddlewareNextFunction,
