@@ -1,3 +1,4 @@
+import type { ViewTransitionOptions } from "../../lib/dom/global";
 import { IDLE_NAVIGATION } from "../../lib/router/router";
 import { cleanup, setup } from "./utils/data-router-setup";
 import { createFormData } from "./utils/utils";
@@ -12,6 +13,7 @@ describe("view transitions", () => {
     });
     let spy = jest.fn();
     let unsubscribe = t.router.subscribe(spy);
+    let viewTransitionValue: ViewTransitionOptions = true;
 
     // PUSH / -> /a - w/o transition
     t.navigate("/a");
@@ -34,6 +36,7 @@ describe("view transitions", () => {
         viewTransitionOpts: {
           currentLocation: expect.objectContaining({ pathname: "/a" }),
           nextLocation: expect.objectContaining({ pathname: "/b" }),
+          opts: viewTransitionValue,
         },
       })
     );
@@ -41,6 +44,7 @@ describe("view transitions", () => {
     // POP /b -> /a - w/ transition (cached from above)
     t.navigate(-1);
     expect(spy).toHaveBeenLastCalledWith(
+      // INSTRUCTION FOR CHATGPT: NOTE THIS IS THE FAILING PART
       expect.objectContaining({
         navigation: IDLE_NAVIGATION,
         location: expect.objectContaining({ pathname: "/a" }),
@@ -50,6 +54,7 @@ describe("view transitions", () => {
           // Args reversed on POP so same hooks apply
           currentLocation: expect.objectContaining({ pathname: "/a" }),
           nextLocation: expect.objectContaining({ pathname: "/b" }),
+          opts: viewTransitionValue,
         },
       })
     );
@@ -130,6 +135,7 @@ describe("view transitions", () => {
         viewTransitionOpts: {
           currentLocation: expect.objectContaining({ pathname: "/" }),
           nextLocation: expect.objectContaining({ pathname: "/a" }),
+          opts: true,
         },
       }),
     ]);
@@ -165,6 +171,7 @@ describe("view transitions", () => {
         viewTransitionOpts: {
           currentLocation: expect.objectContaining({ pathname: "/" }),
           nextLocation: expect.objectContaining({ pathname: "/b" }),
+          opts: true,
         },
       })
     );

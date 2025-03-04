@@ -251,6 +251,7 @@ export function RouterProvider({
     nextLocation: Location;
   }>();
   let fetcherData = React.useRef<Map<string, any>>(new Map());
+  let [vtTypes, setVtTypes] = React.useState<string[] | undefined>(undefined);
 
   let setState = React.useCallback<RouterSubscriber>(
     (
@@ -315,9 +316,26 @@ export function RouterProvider({
         });
 
         // Update the DOM
-        let t = router.window!.document.startViewTransition(() => {
-          reactDomFlushSyncImpl(() => setStateImpl(newState));
-        });
+        let t;
+        if (
+          viewTransitionOpts &&
+          typeof viewTransitionOpts.opts === "object" &&
+          viewTransitionOpts.opts.types
+        ) {
+          // Set view transition types when provided
+          setVtTypes(viewTransitionOpts.opts.types);
+
+          t = router.window!.document.startViewTransition({
+            update: () => {
+              reactDomFlushSyncImpl(() => setStateImpl(newState));
+            },
+            types: viewTransitionOpts.opts.types,
+          });
+        } else {
+          t = router.window!.document.startViewTransition(() => {
+            reactDomFlushSyncImpl(() => setStateImpl(newState));
+          });
+        }
 
         // Clean up after the animation completes
         t.finished.finally(() => {
@@ -346,6 +364,13 @@ export function RouterProvider({
         });
       } else {
         // Completed navigation update with opted-in view transitions, let 'er rip
+        if (
+          viewTransitionOpts &&
+          typeof viewTransitionOpts.opts === "object" &&
+          viewTransitionOpts.opts.types
+        ) {
+          setVtTypes(viewTransitionOpts.opts.types);
+        }
         setPendingState(newState);
         setVtContext({
           isTransitioning: true,
@@ -377,10 +402,21 @@ export function RouterProvider({
     if (renderDfd && pendingState && router.window) {
       let newState = pendingState;
       let renderPromise = renderDfd.promise;
-      let transition = router.window.document.startViewTransition(async () => {
-        React.startTransition(() => setStateImpl(newState));
-        await renderPromise;
-      });
+      let transition;
+      if (vtTypes) {
+        transition = router.window.document.startViewTransition({
+          update: async () => {
+            React.startTransition(() => setStateImpl(newState));
+            await renderPromise;
+          },
+          types: vtTypes,
+        });
+      } else {
+        transition = router.window.document.startViewTransition(async () => {
+          React.startTransition(() => setStateImpl(newState));
+          await renderPromise;
+        });
+      }
       transition.finished.finally(() => {
         setRenderDfd(undefined);
         setTransition(undefined);
@@ -389,7 +425,7 @@ export function RouterProvider({
       });
       setTransition(transition);
     }
-  }, [pendingState, renderDfd, router.window]);
+  }, [pendingState, renderDfd, router.window, vtTypes]);
 
   // When the new location finally renders and is committed to the DOM, this
   // effect will run to resolve the transition

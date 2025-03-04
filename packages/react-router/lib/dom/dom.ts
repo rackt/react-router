@@ -2,6 +2,7 @@ import { warning } from "../router/history";
 import type { RelativeRoutingType } from "../router/router";
 import type { FormEncType, HTMLFormMethod } from "../router/utils";
 import { stripBasename } from "../router/utils";
+import type { ViewTransitionOptions } from "./global";
 
 export const defaultMethod: HTMLFormMethod = "get";
 const defaultEncType: FormEncType = "application/x-www-form-urlencoded";
@@ -226,9 +227,12 @@ export interface SubmitOptions extends FetcherSubmitOptions {
   navigate?: boolean;
 
   /**
-   * Enable view transitions on this submission navigation
+   * Enable view transitions on this submission navigation.
+   * When set to true, the default transition is applied.
+   * Alternatively, an object of type ViewTransitionOptions can be provided
+   * to configure additional options.
    */
-  viewTransition?: boolean;
+  viewTransition?: ViewTransitionOptions;
 }
 
 const supportedFormEncTypes: Set<FormEncType> = new Set([

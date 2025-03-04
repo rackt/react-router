@@ -19,6 +19,7 @@ import type {
   LazyRouteFunction,
   TrackedPromise,
 } from "./router/utils";
+import type { ViewTransitionOptions } from "./dom/global";
 
 // Create react-specific types from the agnostic types in @remix-run/router to
 // export from react-router
@@ -110,6 +111,7 @@ export type ViewTransitionContextObject =
       flushSync: boolean;
       currentLocation: Location;
       nextLocation: Location;
+      viewTransitionTypes?: string[];
     };
 
 export const ViewTransitionContext =
@@ -140,8 +142,11 @@ export interface NavigateOptions {
   relative?: RelativeRoutingType;
   /** Wraps the initial state update for this navigation in a {@link https://react.dev/reference/react-dom/flushSync ReactDOM.flushSync} call instead of the default {@link https://react.dev/reference/react/startTransition React.startTransition} */
   flushSync?: boolean;
-  /** Enables a {@link https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API View Transition} for this navigation by wrapping the final state update in `document.startViewTransition()`. If you need to apply specific styles for this view transition, you will also need to leverage the {@link https://api.reactrouter.com/v7/functions/react_router.useViewTransitionState.html useViewTransitionState()} hook.  */
-  viewTransition?: boolean;
+  /**
+   * Enables a {@link https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API View Transition} for this navigation by wrapping the final state update in `document.startViewTransition()`.
+   * If you need to apply specific styles for this view transition, you will also need to leverage the {@link https://api.reactrouter.com/v7/functions/react_router.useViewTransitionState.html useViewTransitionState()} hook.
+   */
+  viewTransition?: ViewTransitionOptions;
 }
 
 /**

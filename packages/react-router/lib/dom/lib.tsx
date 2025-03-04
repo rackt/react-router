@@ -91,6 +91,7 @@ import {
   useRouteId,
 } from "../hooks";
 import type { SerializeFrom } from "../types/route-data";
+import type { ViewTransitionOptions } from "./global";
 
 ////////////////////////////////////////////////////////////////////////////////
 //#region Global Stuff
@@ -562,17 +563,22 @@ export interface LinkProps
   to: To;
 
   /**
-    Enables a [View Transition](https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API) for this navigation.
-
-    ```jsx
-    <Link to={to} viewTransition>
-      Click me
-    </Link>
-    ```
-
-    To apply specific styles for the transition, see {@link useViewTransitionState}
+   * Enables a [View Transition](https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API) for this navigation.
+   *
+   * When specified as a boolean, the default transition is applied.
+   * Alternatively, you can pass an object to configure additional options (e.g. transition types).
+   *
+   * Example:
+   *
+   * <Link to={to} viewTransition>
+   *   Click me
+   * </Link>
+   *
+   * <Link to={to} viewTransition={{ types: ['slide', 'forwards'] }}>
+   *   Click me
+   * </Link>
    */
-  viewTransition?: boolean;
+  viewTransition?: ViewTransitionOptions;
 }
 
 const ABSOLUTE_URL_REGEX = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
@@ -1049,12 +1055,12 @@ export interface FormProps extends SharedFormProps {
   state?: any;
 
   /**
-   * Enables a [View
-   * Transition](https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API)
-   * for this navigation. To apply specific styles during the transition see
-   * {@link useViewTransitionState}.
+   * Enables a [View Transition](https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API)
+   * for this navigation. When specified as a boolean, the default transition is applied.
+   * Alternatively, you can pass an object to configure additional options (e.g. transition types).
+   * To apply specific styles during the transition, see {@link useViewTransitionState}.
    */
-  viewTransition?: boolean;
+  viewTransition?: ViewTransitionOptions;
 }
 
 type HTMLSubmitEvent = React.BaseSyntheticEvent<
@@ -1331,7 +1337,7 @@ export function useLinkClickHandler<E extends Element = HTMLAnchorElement>(
     state?: any;
     preventScrollReset?: boolean;
     relative?: RelativeRoutingType;
-    viewTransition?: boolean;
+    viewTransition?: ViewTransitionOptions;
   } = {}
 ): (event: React.MouseEvent<E, MouseEvent>) => void {
   let navigate = useNavigate();

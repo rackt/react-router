@@ -1,3 +1,4 @@
+import type { ViewTransitionOptions } from "../dom/global";
 import type { History, Location, Path, To } from "./history";
 import {
   Action as NavigationType,
@@ -434,6 +435,7 @@ export interface StaticHandler {
 type ViewTransitionOpts = {
   currentLocation: Location;
   nextLocation: Location;
+  opts?: ViewTransitionOptions;
 };
 
 /**
@@ -483,7 +485,7 @@ type BaseNavigateOptions = BaseNavigateOrFetchOptions & {
   replace?: boolean;
   state?: any;
   fromRouteId?: string;
-  viewTransition?: boolean;
+  viewTransition?: ViewTransitionOptions;
 };
 
 // Only allowed for submission navigations
@@ -787,11 +789,18 @@ const defaultMapRouteProperties: MapRoutePropertiesFunction = (route) => ({
   hasErrorBoundary: Boolean(route.hasErrorBoundary),
 });
 
-const TRANSITIONS_STORAGE_KEY = "remix-router-transitions";
+export const ROUTER_TRANSITIONS_STORAGE_KEY = "remix-router-transitions";
 
 // Flag used on new `loaderData` to indicate that we do not want to preserve
 // any prior loader data from the throwing route in `mergeLoaderData`
 const ResetLoaderDataSymbol = Symbol("ResetLoaderData");
+
+// The applied view transitions map stores, for each source pathname (string),
+// a mapping from destination pathnames (string) to the view transition option that was used.
+export type AppliedViewTransitionMap = Map<
+  string,
+  Map<string, ViewTransitionOptions>
+>;
 
 //#endregion
 
@@ -962,13 +971,14 @@ export function createRouter(init: RouterInit): Router {
   // AbortController for the active navigation
   let pendingNavigationController: AbortController | null;
 
-  // Should the current navigation enable document.startViewTransition?
-  let pendingViewTransitionEnabled = false;
+  // Should the current navigation enable document.startViewTransition? (includes custom opts when provided)
+  let pendingViewTransition: ViewTransitionOptions = false;
 
-  // Store applied view transitions so we can apply them on POP
-  let appliedViewTransitions: Map<string, Set<string>> = new Map<
+  // Store, for each "from" pathname, a mapping of "to" pathnames to the viewTransition option.
+  // This registry enables us to reapply the appropriate view transition when handling a POP navigation.
+  let appliedViewTransitions: AppliedViewTransitionMap = new Map<
     string,
-    Set<string>
+    Map<string, ViewTransitionOptions>
   >();
 
   // Cleanup function for persisting applied transitions to sessionStorage
@@ -1280,33 +1290,44 @@ export function createRouter(init: RouterInit): Router {
 
     // On POP, enable transitions if they were enabled on the original navigation
     if (pendingAction === NavigationType.Pop) {
-      // Forward takes precedence so they behave like the original navigation
-      let priorPaths = appliedViewTransitions.get(state.location.pathname);
-      if (priorPaths && priorPaths.has(location.pathname)) {
+      // Try to get the transition mapping from the current (source) location.
+      let vTRegistry = appliedViewTransitions.get(state.location.pathname);
+      if (vTRegistry && vTRegistry.has(location.pathname)) {
+        const opts = vTRegistry.get(location.pathname);
         viewTransitionOpts = {
           currentLocation: state.location,
           nextLocation: location,
+          opts,
         };
       } else if (appliedViewTransitions.has(location.pathname)) {
-        // If we don't have a previous forward nav, assume we're popping back to
-        // the new location and enable if that location previously enabled
-        viewTransitionOpts = {
-          currentLocation: location,
-          nextLocation: state.location,
-        };
+        // Otherwise, check the reverse mapping from the destination side.
+        let vTRegistry = appliedViewTransitions.get(location.pathname)!;
+        if (vTRegistry.has(state.location.pathname)) {
+          const opts = vTRegistry.get(state.location.pathname);
+          viewTransitionOpts = {
+            currentLocation: location,
+            nextLocation: state.location,
+            opts,
+          };
+        }
       }
-    } else if (pendingViewTransitionEnabled) {
-      // Store the applied transition on PUSH/REPLACE
-      let toPaths = appliedViewTransitions.get(state.location.pathname);
-      if (toPaths) {
-        toPaths.add(location.pathname);
-      } else {
-        toPaths = new Set<string>([location.pathname]);
-        appliedViewTransitions.set(state.location.pathname, toPaths);
+    } else if (pendingViewTransition) {
+      // For non-POP navigations (PUSH/REPLACE) when viewTransition is enabled:
+      // Retrieve the existing transition mapping for the source pathname.
+      let vTRegistry = appliedViewTransitions.get(state.location.pathname);
+      if (!vTRegistry) {
+        // If no mapping exists, create one.
+        vTRegistry = new Map<string, ViewTransitionOptions>();
+        appliedViewTransitions.set(state.location.pathname, vTRegistry);
       }
+      // Record that navigating from the current pathname to the next uses the pending view transition option.
+      vTRegistry.set(location.pathname, pendingViewTransition);
+
+      // Set the view transition options for the current navigation.
       viewTransitionOpts = {
         currentLocation: state.location,
         nextLocation: location,
+        opts: pendingViewTransition, // Retains the full option (boolean or object)
       };
     }
 
@@ -1336,7 +1357,7 @@ export function createRouter(init: RouterInit): Router {
     // Reset stateful navigation vars
     pendingAction = NavigationType.Pop;
     pendingPreventScrollReset = false;
-    pendingViewTransitionEnabled = false;
+    pendingViewTransition = false;
     isUninterruptedRevalidation = false;
     isRevalidationRequired = false;
     pendingRevalidationDfd?.resolve();
@@ -1445,7 +1466,7 @@ export function createRouter(init: RouterInit): Router {
       pendingError: error,
       preventScrollReset,
       replace: opts && opts.replace,
-      enableViewTransition: opts && opts.viewTransition,
+      viewTransition: opts && opts.viewTransition,
       flushSync,
     });
   }
@@ -1499,7 +1520,7 @@ export function createRouter(init: RouterInit): Router {
       {
         overrideNavigation: state.navigation,
         // Proxy through any rending view transition
-        enableViewTransition: pendingViewTransitionEnabled === true,
+        viewTransition: pendingViewTransition,
       }
     );
     return promise;
@@ -1520,7 +1541,7 @@ export function createRouter(init: RouterInit): Router {
       startUninterruptedRevalidation?: boolean;
       preventScrollReset?: boolean;
       replace?: boolean;
-      enableViewTransition?: boolean;
+      viewTransition?: ViewTransitionOptions;
       flushSync?: boolean;
     }
   ): Promise<void> {
@@ -1538,7 +1559,8 @@ export function createRouter(init: RouterInit): Router {
     saveScrollPosition(state.location, state.matches);
     pendingPreventScrollReset = (opts && opts.preventScrollReset) === true;
 
-    pendingViewTransitionEnabled = (opts && opts.enableViewTransition) === true;
+    pendingViewTransition =
+      opts && opts.viewTransition ? opts.viewTransition : false;
 
     let routesToUse = inFlightDataRoutes || dataRoutes;
     let loadingNavigation = opts && opts.overrideNavigation;
@@ -2748,9 +2770,7 @@ export function createRouter(init: RouterInit): Router {
         },
         // Preserve these flags across redirects
         preventScrollReset: preventScrollReset || pendingPreventScrollReset,
-        enableViewTransition: isNavigation
-          ? pendingViewTransitionEnabled
-          : undefined,
+        viewTransition: isNavigation ? pendingViewTransition : undefined,
       });
     } else {
       // If we have a navigation submission, we will preserve it through the
@@ -2765,9 +2785,7 @@ export function createRouter(init: RouterInit): Router {
         fetcherSubmission,
         // Preserve these flags across redirects
         preventScrollReset: preventScrollReset || pendingPreventScrollReset,
-        enableViewTransition: isNavigation
-          ? pendingViewTransitionEnabled
-          : undefined,
+        viewTransition: isNavigation ? pendingViewTransition : undefined,
       });
     }
   }
@@ -6104,39 +6122,49 @@ function getDoneFetcher(data: Fetcher["data"]): FetcherStates["Idle"] {
   return fetcher;
 }
 
-function restoreAppliedTransitions(
+export function restoreAppliedTransitions(
   _window: Window,
-  transitions: Map<string, Set<string>>
+  transitions: AppliedViewTransitionMap
 ) {
   try {
-    let sessionPositions = _window.sessionStorage.getItem(
-      TRANSITIONS_STORAGE_KEY
+    const sessionData = _window.sessionStorage.getItem(
+      ROUTER_TRANSITIONS_STORAGE_KEY
     );
-    if (sessionPositions) {
-      let json = JSON.parse(sessionPositions);
-      for (let [k, v] of Object.entries(json || {})) {
-        if (v && Array.isArray(v)) {
-          transitions.set(k, new Set(v || []));
+    if (sessionData) {
+      // Parse the JSON object into the expected nested structure.
+      const json: Record<
+        string,
+        Record<string, ViewTransitionOptions>
+      > = JSON.parse(sessionData);
+      for (const [from, toOptsObj] of Object.entries(json)) {
+        const toOptsMap = new Map<string, ViewTransitionOptions>();
+        for (const [to, opts] of Object.entries(toOptsObj)) {
+          toOptsMap.set(to, opts);
         }
+        transitions.set(from, toOptsMap);
       }
     }
   } catch (e) {
-    // no-op, use default empty object
+    // On error, simply do nothing.
   }
 }
 
-function persistAppliedTransitions(
+export function persistAppliedTransitions(
   _window: Window,
-  transitions: Map<string, Set<string>>
+  transitions: AppliedViewTransitionMap
 ) {
   if (transitions.size > 0) {
-    let json: Record<string, string[]> = {};
-    for (let [k, v] of transitions) {
-      json[k] = [...v];
+    // Convert the nested Map structure into a plain object.
+    const json: Record<string, Record<string, ViewTransitionOptions>> = {};
+    for (const [from, toOptsMap] of transitions.entries()) {
+      json[from] = {};
+      for (const [to, opts] of toOptsMap.entries()) {
+        json[from][to] = opts;
+      }
     }
     try {
       _window.sessionStorage.setItem(
-        TRANSITIONS_STORAGE_KEY,
+        ROUTER_TRANSITIONS_STORAGE_KEY,
         JSON.stringify(json)
       );
     } catch (error) {
