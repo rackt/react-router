@@ -219,7 +219,7 @@ export function UserSearchCombobox() {
 
 ```tsx lines=[2,5]
 import { useFetcher } from "react-router";
-import type { Search } from "./search-users";
+import type * as Search from "./search-users";
 
 export function UserSearchCombobox() {
   let fetcher = useFetcher<typeof Search.action>();
